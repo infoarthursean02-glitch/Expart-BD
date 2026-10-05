@@ -1,7 +1,9 @@
-import { OrderRecord, OrderStatus, AdminSettings } from '../types';
+import { OrderRecord, OrderStatus, AdminSettings, FaqItem, PackageFeatureItem } from '../types';
 
 const STORAGE_KEY = 'expart_bd_orders_v1';
 const SETTINGS_KEY = 'expart_bd_settings_v1';
+const FAQS_KEY = 'expart_bd_faqs_v1';
+const FEATURES_KEY = 'expart_bd_features_v1';
 
 const DEFAULT_SETTINGS: AdminSettings = {
   paymentNumber: '01601300122',
@@ -10,6 +12,8 @@ const DEFAULT_SETTINGS: AdminSettings = {
   adminUsername: 'eXPART bd',
   adminPassword: 'Ex02@0##',
   adminPin: '1234',
+  announcementActive: false,
+  announcementText: '🔥 বিশেষ অফার: সম্পূর্ণ ফেসবুক মনিটাইজেশন প্যাকেজ এখন মাত্র ৳২,৯৯৯ টাকায়!',
 };
 
 const INITIAL_ORDERS: OrderRecord[] = [
@@ -54,6 +58,54 @@ const INITIAL_ORDERS: OrderRecord[] = [
     notes: 'ইন-স্ট্রিম অ্যাডস ও ব্যাংক ইনফরমেশন সেটআপ চাই।',
     adminNote: 'সেটআপ সম্পন্ন হয়েছে এবং ক্লায়েন্টকে রিপোর্ট পাঠানো হয়েছে।',
   },
+];
+
+const INITIAL_FAQS: FaqItem[] = [
+  {
+    id: 'faq-1',
+    question: 'ফেসবুক কনটেন্ট মনিটাইজেশন কী? (What is Facebook Content Monetization?)',
+    answer:
+      'ফেসবুক কনটেন্ট মনিটাইজেশন হলো মেটা প্ল্যাটফর্মের এমন একটি ব্যবস্থা যার মাধ্যমে যোগ্য ভিডিও ক্রিয়েটররা তাদের আপলোডকৃত ভিডিও বা রিলসে বিজ্ঞাপন (In-Stream Ads), স্টারস (Stars) ইত্যাদির মাধ্যমে সরাসরি আয় করতে পারেন।',
+  },
+  {
+    id: 'faq-2',
+    question: 'কারা Expart BD-এর এই সার্ভিসটি গ্রহণ করতে পারবেন? (Who can use this service?)',
+    answer:
+      'যেকোনো ফেসবুক ভিডিও ক্রিয়েটর, পেজ ওনার, ইনফ্লুয়েন্সার বা ব্যবসা প্রতিষ্ঠান যারা নিজেদের ফেসবুক পেজ থেকে আয়ের পথ সুগম করতে সঠিক কারিগরি সেটআপ ও মেটা পলিসি গাইডেন্স চান।',
+  },
+  {
+    id: 'faq-3',
+    question: 'সার্ভিস ফি কত এবং কীভাবে পেমেন্ট করব? (How much does the service cost?)',
+    answer:
+      'আমাদের সম্পূর্ণ ফেসবুক মনিটাইজেশন প্যাকেজের মূল্য এককালীন মাত্র ৳২,৯৯৯ টাকা। আপনি আমাদের অফিশিয়াল বিকাশ অথবা নগদ নম্বরে (০১৬০১-৩০০১২২) Send Money করে প্রাপ্ত Transaction ID (TrxID) দিয়ে অর্ডার কনফার্ম করতে পারবেন। কোনো লুকানো চার্জ নেই।',
+  },
+  {
+    id: 'faq-4',
+    question: 'TrxID সাবমিট করার পর কীভাবে ভেরিফিকেশন হয়? (How is payment verified?)',
+    answer:
+      'অর্ডার ফর্মে আপনার নাম, পেজ লিংক ও TrxID সাবমিট করার সাথে সাথে সিস্টেম স্বয়ংক্রিয়ভাবে রিকোয়েস্টটি অ্যাডমিন প্যানেলে জমা করে। আমাদের অ্যাডমিন টিম TrxID মিলিয়ে সাথে সাথে আপনার পেজের অডিট ও সার্ভিস প্রসেসিং শুরু করে।',
+  },
+  {
+    id: 'faq-5',
+    question: 'সার্ভিস প্রসেস সম্পন্ন হতে কত সময় লাগে? (How long does the process take?)',
+    answer:
+      'অর্ডার প্লেস করার পর ২৪ থেকে ৪৮ ঘণ্টার মধ্যে আমাদের টিম আপনার পেজ অডিট ও টেকনিক্যাল কাজ শুরু করে। ধাপে ধাপে সেটিংস ও ব্যাংক পেআউট কনফিগারেশন বুঝিয়ে দেওয়া হয়।',
+  },
+  {
+    id: 'faq-6',
+    question: 'মনিটাইজেশন কি শতভাগ গ্যারান্টিড? (Is monetization guaranteed?)',
+    answer:
+      'না, কোনো সৎ প্রতিষ্ঠান ফেসবুকের পক্ষ থেকে ১০০% অনুমোদনের গ্যারান্টি দিতে পারে না। কারণ মনিটাইজেশনের চূড়ান্ত সিদ্ধান্ত মেটা (Meta/Facebook) অ্যালগরিদম ও তাদের নিজস্ব পলিসির উপর নির্ভরশীল। আমরা মেটার নিয়ম মেনে আপনার পেজের যাবতীয় সেটিংস প্রস্তুত করি যাতে রিজেক্ট হওয়ার ঝুঁকি সর্বনিম্ন থাকে।',
+  },
+];
+
+const INITIAL_PACKAGE_FEATURES: PackageFeatureItem[] = [
+  { id: 'feat-1', text: 'Facebook Monetization Assistance', bn: 'মনিটাইজেশন সেটিংস ও কারিগরি সহায়তা' },
+  { id: 'feat-2', text: 'Professional Support', bn: 'অভিজ্ঞ এক্সপার্টদের সার্বক্ষণিক দিকনির্দেশনা' },
+  { id: 'feat-3', text: 'Creator-focused Guidance', bn: 'ভিডিও ও রিলস কনটেন্ট নির্মাতাদের জন্য বিশেষ গাইডলাইন' },
+  { id: 'feat-4', text: 'Order Support', bn: 'অর্ডারের শুরু থেকে শেষ পর্যন্ত নিয়মিত ট্র্যাকিং' },
+  { id: 'feat-5', text: 'Page Eligibility Audit', bn: 'পেজ এলিজিবিলিটি ও পলিসি ভায়োলেশন চেকিং' },
+  { id: 'feat-6', text: 'Payout & Tax Setup Guidance', bn: 'ব্যাংক তথ্য ও পেআউট কনফিগারেশন সংক্রান্ত সাহায্য' },
 ];
 
 export const getOrders = (): OrderRecord[] => {
@@ -136,6 +188,100 @@ export const saveSettings = (newSettings: AdminSettings): void => {
     window.dispatchEvent(new CustomEvent('expart_settings_changed'));
   } catch (e) {
     console.error('Error saving settings', e);
+  }
+};
+
+// FAQ Management
+export const getFaqs = (): FaqItem[] => {
+  try {
+    const data = localStorage.getItem(FAQS_KEY);
+    if (!data) {
+      localStorage.setItem(FAQS_KEY, JSON.stringify(INITIAL_FAQS));
+      return INITIAL_FAQS;
+    }
+    return JSON.parse(data);
+  } catch (e) {
+    return INITIAL_FAQS;
+  }
+};
+
+export const saveFaq = (faq: FaqItem): void => {
+  try {
+    const current = getFaqs();
+    const updated = [...current, faq];
+    localStorage.setItem(FAQS_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('expart_faqs_changed'));
+  } catch (e) {
+    console.error('Error saving FAQ', e);
+  }
+};
+
+export const updateFaq = (id: string, updatedFaq: Partial<FaqItem>): void => {
+  try {
+    const current = getFaqs();
+    const updated = current.map((f) => (f.id === id ? { ...f, ...updatedFaq } : f));
+    localStorage.setItem(FAQS_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('expart_faqs_changed'));
+  } catch (e) {
+    console.error('Error updating FAQ', e);
+  }
+};
+
+export const deleteFaq = (id: string): void => {
+  try {
+    const current = getFaqs();
+    const updated = current.filter((f) => f.id !== id);
+    localStorage.setItem(FAQS_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('expart_faqs_changed'));
+  } catch (e) {
+    console.error('Error deleting FAQ', e);
+  }
+};
+
+// Package Features Management
+export const getPackageFeatures = (): PackageFeatureItem[] => {
+  try {
+    const data = localStorage.getItem(FEATURES_KEY);
+    if (!data) {
+      localStorage.setItem(FEATURES_KEY, JSON.stringify(INITIAL_PACKAGE_FEATURES));
+      return INITIAL_PACKAGE_FEATURES;
+    }
+    return JSON.parse(data);
+  } catch (e) {
+    return INITIAL_PACKAGE_FEATURES;
+  }
+};
+
+export const savePackageFeature = (feature: PackageFeatureItem): void => {
+  try {
+    const current = getPackageFeatures();
+    const updated = [...current, feature];
+    localStorage.setItem(FEATURES_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('expart_features_changed'));
+  } catch (e) {
+    console.error('Error saving feature', e);
+  }
+};
+
+export const updatePackageFeature = (id: string, updatedFeat: Partial<PackageFeatureItem>): void => {
+  try {
+    const current = getPackageFeatures();
+    const updated = current.map((f) => (f.id === id ? { ...f, ...updatedFeat } : f));
+    localStorage.setItem(FEATURES_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('expart_features_changed'));
+  } catch (e) {
+    console.error('Error updating feature', e);
+  }
+};
+
+export const deletePackageFeature = (id: string): void => {
+  try {
+    const current = getPackageFeatures();
+    const updated = current.filter((f) => f.id !== id);
+    localStorage.setItem(FEATURES_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('expart_features_changed'));
+  } catch (e) {
+    console.error('Error deleting feature', e);
   }
 };
 

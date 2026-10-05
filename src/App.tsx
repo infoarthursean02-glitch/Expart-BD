@@ -18,18 +18,39 @@ import { OrderForm } from './components/OrderForm';
 import { FinalCta } from './components/FinalCta';
 import { Footer } from './components/Footer';
 import { AdminDashboard } from './components/AdminDashboard';
+import { getSettings } from './utils/orderStorage';
+import { AdminSettings } from './types';
+import { Megaphone } from 'lucide-react';
+
+const isCurrentRouteAdmin = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const path = window.location.pathname.toLowerCase();
+  const hash = window.location.hash.toLowerCase();
+  return (
+    path === '/admin' || 
+    path === '/admin/' || 
+    path.startsWith('/admin/') || 
+    hash === '#admin' || 
+    hash === '#/admin'
+  );
+};
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'web' | 'admin'>(() => {
-    return window.location.hash === '#admin' ? 'admin' : 'web';
+    return isCurrentRouteAdmin() ? 'admin' : 'web';
   });
 
+  const [settings, setSettings] = useState<AdminSettings>(getSettings());
+
   useEffect(() => {
-    // Listen for hash changes (e.g. visiting #admin directly)
-    const handleHashChange = () => {
-      if (window.location.hash === '#admin') {
+    const handleSettingsChange = () => setSettings(getSettings());
+    window.addEventListener('expart_settings_changed', handleSettingsChange);
+
+    // Handle Direct URL changes, Refresh, and Browser History (Back/Forward)
+    const handleLocationChange = () => {
+      if (isCurrentRouteAdmin()) {
         setCurrentView('admin');
-      } else if (currentView === 'admin' && window.location.hash !== '#admin') {
+      } else {
         setCurrentView('web');
       }
     };
@@ -38,22 +59,25 @@ export default function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
         e.preventDefault();
-        window.location.hash = 'admin';
+        window.history.pushState(null, '', '/admin');
         setCurrentView('admin');
       }
     };
 
-    window.addEventListener('hashchange', handleHashChange);
+    window.addEventListener('popstate', handleLocationChange);
+    window.addEventListener('hashchange', handleLocationChange);
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('expart_settings_changed', handleSettingsChange);
+      window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('hashchange', handleLocationChange);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [currentView]);
+  }, []);
 
   const closeAdmin = () => {
-    window.location.hash = '';
+    window.history.pushState(null, '', '/');
     setCurrentView('web');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -70,14 +94,23 @@ export default function App() {
     }, 100);
   };
 
-  // If in dedicated Admin Panel View (accessed via /#admin or secret shortcut)
+  // If in dedicated Admin Panel View (Exact URL: /admin or /admin/login)
   if (currentView === 'admin') {
     return <AdminDashboard onBackToWeb={closeAdmin} />;
   }
 
   // 100% Clean Client-Facing Public Landing Page (Zero Admin buttons/links)
   return (
-    <div className="min-h-screen bg-[#0b0714] text-slate-100 selection:bg-orange-500 selection:text-white flex flex-col font-sans">
+    <div className="min-h-screen bg-white text-slate-900 selection:bg-orange-500 selection:text-white flex flex-col font-sans">
+      
+      {/* Live Announcement Banner (Manageable from Admin Panel) */}
+      {settings.announcementActive && settings.announcementText && (
+        <div className="bg-gradient-to-r from-orange-600 via-rose-600 to-amber-600 text-white text-xs font-bold py-2 px-4 text-center flex items-center justify-center gap-2 sticky top-0 z-50 shadow-sm">
+          <Megaphone className="w-3.5 h-3.5 shrink-0 animate-bounce" />
+          <span>{settings.announcementText}</span>
+        </div>
+      )}
+
       {/* Sticky Navigation */}
       <Navbar onOrderClick={scrollToOrder} />
 

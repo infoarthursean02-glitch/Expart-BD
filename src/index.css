@@ -3,68 +3,27 @@
 @layer base {
   body {
     font-family: 'Hind Siliguri', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-    background-color: #0b0714;
-    color: #f8fafc;
+    background-color: #ffffff;
+    color: #0f172a;
   }
 }
 
-/* Sunset Blaze Glassmorphism Effects */
-.sunset-glass {
-  background: rgba(18, 11, 28, 0.72);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border: 1px solid rgba(249, 115, 22, 0.2);
-}
-
-.sunset-glass-card {
-  background: rgba(22, 13, 34, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(251, 146, 60, 0.15);
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.sunset-glass-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(249, 115, 22, 0.5);
-  box-shadow: 0 20px 40px -15px rgba(234, 88, 12, 0.25), 0 0 25px -5px rgba(225, 29, 72, 0.2);
-}
-
-/* Sunset Glow Radiance */
-.sunset-glow {
-  background: radial-gradient(circle, rgba(234, 88, 12, 0.22) 0%, rgba(225, 29, 72, 0.12) 45%, rgba(11, 7, 20, 0) 70%);
-}
-
-.amber-glow {
-  background: radial-gradient(circle, rgba(245, 158, 11, 0.18) 0%, rgba(18, 11, 28, 0) 70%);
-}
-
-.rose-glow {
-  background: radial-gradient(circle, rgba(244, 63, 94, 0.18) 0%, rgba(18, 11, 28, 0) 70%);
-}
-
-/* Gradient Text Shorthand */
+/* Sunset Blaze Accent Gradients */
 .text-sunset-blaze {
-  background: linear-gradient(135deg, #fbbf24 0%, #f97316 40%, #f43f5e 100%);
+  background: linear-gradient(135deg, #d97706 0%, #ea580c 45%, #e11d48 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-.text-sunset-light {
-  background: linear-gradient(135deg, #fff 0%, #fed7aa 50%, #fca5a5 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* Custom Sunset Scrollbar */
+/* Custom Clean Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #0b0714;
+  background: #f1f5f9;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2a1538;
+  background: #cbd5e1;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {

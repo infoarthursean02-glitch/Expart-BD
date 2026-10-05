@@ -8,44 +8,44 @@ export const WhyChooseUs: React.FC = () => {
       title: 'প্রফেশনাল গাইডেন্স (Professional Assistance)',
       quote: 'আপনার Facebook monetization journey-তে professional guidance ও support।',
       description: 'মেটা পলিসি ও বিজনেস স্যুটের জটিল নিয়মনীতি সহজভাবে বুঝিয়ে আপনার পেজকে মনিটাইজেশনের উপযোগী করা।',
-      iconColor: 'text-orange-400',
+      iconColor: 'text-orange-600',
     },
     {
       icon: Compass,
       title: 'সহজ ও স্পষ্ট পদ্ধতি (Simple Process)',
       quote: 'সহজ ও পরিষ্কার process-এর মাধ্যমে service নেওয়ার সুবিধা।',
       description: 'কোনো জটিলতা নেই—বিকাশ বা নগদে পেমেন্ট করে TrxID দিয়ে সাবমিট করলেই ধাপে ধাপে কাজ শুরু হয়।',
-      iconColor: 'text-rose-400',
+      iconColor: 'text-rose-600',
     },
     {
       icon: Headphones,
       title: 'ডেডিকেটেড অর্ডার সাপোর্ট (Dedicated Support)',
       quote: 'Order করার পর প্রয়োজনীয় support ও communication।',
       description: 'অর্ডারের শুরু থেকে শেষ পর্যন্ত আমাদের অ্যাডমিন ও সাপোর্ট টিম আপনার পেজের পাশে থাকবে।',
-      iconColor: 'text-amber-400',
+      iconColor: 'text-amber-600',
     },
     {
       icon: Sparkles,
       title: 'কনটেন্ট ক্রিয়েটর ফোকাসড (Creator Focused)',
       quote: 'Facebook content creators এবং page owners-এর জন্য বিশেষভাবে তৈরি।',
       description: 'ভিডিও নির্মাতা, রিলস পাবলিশার ও ফেসবুক পেজ অ্যাডমিনদের বাস্তব চাহিদা অনুযায়ী ডিজাইনকৃত।',
-      iconColor: 'text-orange-500',
+      iconColor: 'text-orange-600',
     },
   ];
 
   return (
-    <section id="why-us" className="py-20 sm:py-24 relative overflow-hidden bg-[#0e0818]">
+    <section id="why-us" className="py-20 sm:py-24 relative overflow-hidden bg-slate-50/70 border-y border-slate-200/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-14 sm:mb-16 space-y-3">
-          <div className="text-xs uppercase tracking-widest text-orange-400 font-bold">
+          <div className="text-xs uppercase tracking-widest text-orange-600 font-bold">
             বিশ্বস্ততার প্রতীক · Expart BD
           </div>
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+          <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
             কেন আমাদের ফেসবুক মনিটাইজেশন সার্ভিস বেছে নেবেন?
           </h2>
-          <p className="text-sm sm:text-base text-slate-300 max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto">
             আমরা সাধারণ কোনো মার্কেটিং এজেন্সি নই — আমাদের বিশেষায়িত সেবা শুধুমাত্র ফেসবুক কনটেন্ট মনিটাইজেশনকে ঘিরে।
           </p>
         </div>
@@ -57,36 +57,33 @@ export const WhyChooseUs: React.FC = () => {
             return (
               <div
                 key={idx}
-                className="group relative p-6 sm:p-8 rounded-3xl bg-[#160d26]/80 border border-orange-500/20 hover:border-orange-500/50 hover:bg-[#1a0f2e] transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-orange-600/15 flex flex-col justify-between"
+                className="group relative p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 hover:border-orange-300 hover:shadow-xl transition-all duration-300 shadow-sm flex flex-col justify-between"
               >
-                {/* Glow on hover */}
-                <div className="absolute top-0 right-0 w-36 h-36 bg-orange-600/5 rounded-full blur-2xl group-hover:bg-orange-600/10 transition-colors pointer-events-none" />
-
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-orange-500/15 to-rose-500/15 border border-orange-500/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-200 flex items-center justify-center group-hover:scale-105 transition-transform">
                       <Icon className={`w-6 h-6 ${feature.iconColor}`} />
                     </div>
-                    <span className="text-xs font-mono font-bold text-orange-400/80">০{idx + 1}</span>
+                    <span className="text-xs font-mono font-bold text-orange-600">০{idx + 1}</span>
                   </div>
 
                   <div className="space-y-2">
-                    <h3 className="text-lg sm:text-xl font-bold text-white group-hover:text-orange-300 transition-colors">
+                    <h3 className="text-lg sm:text-xl font-bold text-slate-900 group-hover:text-orange-600 transition-colors">
                       {feature.title}
                     </h3>
 
                     {/* Bangla Quote */}
-                    <p className="text-sm sm:text-base font-semibold text-orange-200/90 leading-relaxed bg-[#201035]/60 p-3 rounded-xl border border-orange-500/20">
+                    <p className="text-sm sm:text-base font-semibold text-slate-800 leading-relaxed bg-orange-50/60 p-3 rounded-xl border border-orange-200/60">
                       "{feature.quote}"
                     </p>
 
-                    <p className="text-xs sm:text-sm text-slate-400 leading-relaxed pt-1">
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed pt-1">
                       {feature.description}
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-5 pt-4 border-t border-white/5 flex items-center text-xs text-orange-400 font-semibold">
+                <div className="mt-5 pt-4 border-t border-slate-100 flex items-center text-xs text-orange-600 font-semibold">
                   <CheckCircle className="w-4 h-4 mr-1.5 text-orange-500 shrink-0" />
                   <span>বাংলাদেশের ক্রিয়েটরদের উপযোগী বিশ্বস্ত সার্ভিস</span>
                 </div>

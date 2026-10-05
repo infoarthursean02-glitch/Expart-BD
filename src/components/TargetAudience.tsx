@@ -41,18 +41,18 @@ export const TargetAudience: React.FC = () => {
   ];
 
   return (
-    <section id="creators" className="py-20 sm:py-24 relative overflow-hidden bg-[#0e0818]">
+    <section id="creators" className="py-20 sm:py-24 relative overflow-hidden bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-14 space-y-3">
-          <div className="text-xs uppercase tracking-widest text-orange-400 font-bold">
+          <div className="text-xs uppercase tracking-widest text-orange-600 font-bold">
             কাদের জন্য এই সার্ভিস?
           </div>
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+          <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
             ফেসবুক ক্রিয়েটরদের জন্য পারফেক্ট (Perfect For Facebook Creators)
           </h2>
-          <p className="text-sm sm:text-base text-slate-300">
+          <p className="text-sm sm:text-base text-slate-600">
             আপনি যে ধরনের কন্টেন্টই তৈরি করুন না কেন, Expart BD আপনার পেজকে মনিটাইজেশন উপযোগী করতে প্রস্তুত।
           </p>
         </div>
@@ -64,30 +64,30 @@ export const TargetAudience: React.FC = () => {
             return (
               <div
                 key={idx}
-                className="relative p-6 sm:p-7 rounded-3xl bg-[#160d26]/80 border border-orange-500/20 hover:border-orange-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-orange-600/15 group flex flex-col justify-between"
+                className="relative p-6 sm:p-7 rounded-3xl bg-slate-50/70 border border-slate-200 hover:border-orange-300 hover:bg-white transition-all duration-300 hover:shadow-lg shadow-xs group flex flex-col justify-between"
               >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-orange-500/20 to-rose-500/20 border border-orange-500/35 text-orange-400 flex items-center justify-center group-hover:scale-105 transition-all">
+                    <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center group-hover:scale-105 transition-all">
                       <Icon className="w-6 h-6" />
                     </div>
-                    <span className="text-[11px] font-bold text-orange-400 bg-orange-500/10 px-2.5 py-1 rounded-full border border-orange-500/20">
+                    <span className="text-[11px] font-bold text-orange-700 bg-orange-50 px-2.5 py-1 rounded-full border border-orange-200">
                       {item.badge}
                     </span>
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-bold text-white group-hover:text-orange-300 transition-colors">
+                    <h3 className="text-lg font-bold text-slate-900 group-hover:text-orange-600 transition-colors">
                       {item.title}
                     </h3>
                   </div>
 
-                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
                     {item.description}
                   </p>
                 </div>
 
-                <div className="mt-5 pt-3 border-t border-white/5 flex items-center gap-1.5 text-xs text-orange-400 font-semibold">
+                <div className="mt-5 pt-3 border-t border-slate-200/80 flex items-center gap-1.5 text-xs text-orange-600 font-semibold">
                   <CheckCircle2 className="w-4 h-4 shrink-0 text-orange-500" />
                   <span>{item.highlight}</span>
                 </div>
@@ -103,30 +103,30 @@ export const TargetAudience: React.FC = () => {
             return (
               <div
                 key={idx}
-                className="relative p-6 sm:p-7 rounded-3xl bg-[#160d26]/80 border border-orange-500/20 hover:border-orange-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-orange-600/15 group flex flex-col justify-between"
+                className="relative p-6 sm:p-7 rounded-3xl bg-slate-50/70 border border-slate-200 hover:border-orange-300 hover:bg-white transition-all duration-300 hover:shadow-lg shadow-xs group flex flex-col justify-between"
               >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-orange-500/20 to-rose-500/20 border border-orange-500/35 text-orange-400 flex items-center justify-center group-hover:scale-105 transition-all">
+                    <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center group-hover:scale-105 transition-all">
                       <Icon className="w-6 h-6" />
                     </div>
-                    <span className="text-[11px] font-bold text-orange-400 bg-orange-500/10 px-2.5 py-1 rounded-full border border-orange-500/20">
+                    <span className="text-[11px] font-bold text-orange-700 bg-orange-50 px-2.5 py-1 rounded-full border border-orange-200">
                       {item.badge}
                     </span>
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-bold text-white group-hover:text-orange-300 transition-colors">
+                    <h3 className="text-lg font-bold text-slate-900 group-hover:text-orange-600 transition-colors">
                       {item.title}
                     </h3>
                   </div>
 
-                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
                     {item.description}
                   </p>
                 </div>
 
-                <div className="mt-5 pt-3 border-t border-white/5 flex items-center gap-1.5 text-xs text-orange-400 font-semibold">
+                <div className="mt-5 pt-3 border-t border-slate-200/80 flex items-center gap-1.5 text-xs text-orange-600 font-semibold">
                   <CheckCircle2 className="w-4 h-4 shrink-0 text-orange-500" />
                   <span>{item.highlight}</span>
                 </div>

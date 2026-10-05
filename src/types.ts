@@ -24,12 +24,20 @@ export interface AdminSettings {
   adminUsername: string;
   adminPassword: string;
   adminPin?: string;
+  announcementActive?: boolean;
+  announcementText?: string;
 }
 
 export interface FaqItem {
   id: string;
   question: string;
   answer: string;
+}
+
+export interface PackageFeatureItem {
+  id: string;
+  text: string;
+  bn: string;
 }
 
 export interface StepItem {
