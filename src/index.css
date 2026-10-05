@@ -6,6 +6,10 @@
     background-color: #ffffff;
     color: #0f172a;
   }
+
+  h1, h2, h3, .font-heading {
+    font-family: 'Anek Bangla', 'Hind Siliguri', system-ui, sans-serif;
+  }
 }
 
 /* Sunset Blaze Accent Gradients */

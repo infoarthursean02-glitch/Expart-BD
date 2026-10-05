@@ -43,14 +43,16 @@ export const Hero: React.FC<HeroProps> = ({ onOrderClick }) => {
 
             {/* Headline */}
             <div className="space-y-3">
-              <h1 className="text-3xl sm:text-5xl xl:text-6xl font-black text-slate-900 tracking-tight leading-[1.2]">
+              <h1 className="font-heading text-3xl sm:text-5xl xl:text-6xl font-black text-slate-900 tracking-tight leading-[1.2]">
                 আপনার ফেসবুক কনটেন্টকে আয়ের সুযোগে রূপান্তর করুন{' '}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 via-rose-600 to-amber-600">
-                  (Expart BD)
+                <span className="block mt-2 sm:mt-3 text-transparent bg-clip-text bg-gradient-to-r from-orange-600 via-rose-600 to-amber-600">
+                  - Complete Content Monetize Offer
                 </span>
               </h1>
-              <p className="text-lg sm:text-xl text-orange-600 font-bold">
-                Facebook Content Monetization Service
+              <p className="text-lg sm:text-xl text-orange-600 font-bold flex items-center justify-center lg:justify-start gap-2">
+                <span>Facebook Content Monetization Service</span>
+                <span className="text-slate-300 font-normal">|</span>
+                <span className="text-slate-800 font-extrabold">(Expart BD)</span>
               </p>
             </div>
 

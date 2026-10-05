@@ -95,10 +95,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
   // Settings Form State
   const [settingsForm, setSettingsForm] = useState<AdminSettings>(getSettings());
   const [settingsSavedToast, setSettingsSavedToast] = useState(false);
+  const [csvDownloadedToast, setCsvDownloadedToast] = useState(false);
 
   // Note editor
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteInput, setNoteInput] = useState('');
+
+  const handleDownloadCsv = () => {
+    exportOrdersCsv();
+    setCsvDownloadedToast(true);
+    setTimeout(() => setCsvDownloadedToast(false), 3500);
+  };
 
   // FAQ Modal / Form State
   const [faqModalOpen, setFaqModalOpen] = useState(false);
@@ -472,6 +479,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
         <div className="flex items-center gap-2 sm:gap-3">
           <button
             type="button"
+            onClick={handleDownloadCsv}
+            className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-orange-600 via-rose-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white text-xs font-bold shadow-sm shadow-orange-600/20 transition-all cursor-pointer"
+            title="Download submitted orders list as a CSV file for bookkeeping"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">অর্ডার CSV ডাউনলোড</span>
+            <span className="md:hidden">CSV</span>
+            <span className="px-1.5 py-0.5 rounded-md bg-white/20 text-[10px] font-mono">
+              {orders.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
             onClick={onBackToWeb}
             className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer"
           >
@@ -661,14 +682,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     ফেসবুক কনটেন্ট মনিটাইজেশন অর্ডারের সামগ্রিক পরিস্থিতি ও TrxID সামারি
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={loadData}
-                  className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-200 flex items-center gap-1.5 cursor-pointer shadow-xs"
-                >
-                  <RefreshCw className="w-3.5 h-3.5 text-orange-600" />
-                  <span>তথ্য রিফ্রেশ করুন</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleDownloadCsv}
+                    className="px-3.5 py-2 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-bold border border-orange-200 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    title="Download list of submitted orders as CSV for bookkeeping"
+                  >
+                    <Download className="w-3.5 h-3.5 text-orange-600" />
+                    <span>বুককিপিং CSV ডাউনলোড</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={loadData}
+                    className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-200 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 text-orange-600" />
+                    <span>তথ্য রিফ্রেশ করুন</span>
+                  </button>
+                </div>
               </div>
 
               {/* 4 Large Stats Cards */}
@@ -1873,6 +1906,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* Floating CSV Downloaded Confirmation Toast */}
+      {csvDownloadedToast && (
+        <div className="fixed bottom-6 right-6 z-50 p-4 rounded-2xl bg-slate-900 text-white shadow-2xl flex items-center gap-3 border border-orange-500/40 text-xs animate-fadeIn">
+          <div className="w-8 h-8 rounded-xl bg-emerald-500 flex items-center justify-center text-white shrink-0">
+            <Check className="w-4 h-4 stroke-[3]" />
+          </div>
+          <div>
+            <div className="font-bold text-white">CSV ফাইল সফলভাবে ডাউনলোড হয়েছে!</div>
+            <div className="text-[11px] text-slate-300">
+              বুককিপিংয়ের জন্য সকল অর্ডারের তালিকা প্রস্তুত।
+            </div>
           </div>
         </div>
       )}

@@ -301,20 +301,6 @@ export const OrderForm: React.FC<OrderFormProps> = () => {
 
                 </div>
 
-                {/* Optional Notes */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-800 block">
-                    অতিরিক্ত কোনো প্রশ্ন বা নোট (Optional)
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="আপনার পেজ সম্পর্কে কোনো বিশেষ কথা থাকলে এখানে লিখতে পারেন..."
-                    className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm resize-none shadow-xs"
-                  />
-                </div>
-
                 {/* Submit CTA */}
                 <div className="pt-2">
                   <button
