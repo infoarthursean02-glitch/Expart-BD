@@ -9,10 +9,17 @@ import {
   Clock, 
   ShieldCheck, 
   RotateCcw,
-  AlertCircle
+  AlertCircle,
+  Eye,
+  MapPin,
+  ExternalLink,
+  X,
+  Globe
 } from 'lucide-react';
 import { OrderRecord, PaymentMethod, AdminSettings } from '../types';
 import { saveOrder, getSettings } from '../utils/orderStorage';
+import { captureClientLocation } from '../utils/clientLocation';
+import { ExpartBDLogo } from './ExpartBDLogo';
 
 interface OrderFormProps {}
 
@@ -29,6 +36,7 @@ export const OrderForm: React.FC<OrderFormProps> = () => {
   const [copiedNumber, setCopiedNumber] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedOrder, setSubmittedOrder] = useState<OrderRecord | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   React.useEffect(() => {
     const handleSettings = () => setSettings(getSettings());
@@ -49,7 +57,14 @@ export const OrderForm: React.FC<OrderFormProps> = () => {
     return `EXP-${random}`;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const generate2ExtraChars = (): string => {
+    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const c1 = chars.charAt(Math.floor(Math.random() * chars.length));
+    const c2 = chars.charAt(Math.floor(Math.random() * chars.length));
+    return `${c1}${c2}`;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName || !phoneNumber || !pageUrl || !senderNumber || !trxId) {
       alert('অনুগ্রহ করে সকল প্রয়োজনীয় তথ্য ও TrxID প্রদান করুন।');
@@ -61,6 +76,16 @@ export const OrderForm: React.FC<OrderFormProps> = () => {
     const now = new Date();
     const timeString = `আজ, ${now.toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })}`;
 
+    const extraChars = generate2ExtraChars();
+
+    // Capture client exact location
+    let locationData;
+    try {
+      locationData = await captureClientLocation();
+    } catch (err) {
+      console.error('Error capturing client location', err);
+    }
+
     const newOrder: OrderRecord = {
       id: generateOrderId(),
       fullName: fullName.trim(),
@@ -69,17 +94,17 @@ export const OrderForm: React.FC<OrderFormProps> = () => {
       paymentMethod,
       senderNumber: senderNumber.trim(),
       trxId: trxId.trim().toUpperCase(),
+      extraTrxChars: extraChars,
       amount: settings.packagePrice || 2999,
       status: 'checking',
       createdAt: timeString,
       notes: notes.trim(),
+      clientLocation: locationData,
     };
 
-    setTimeout(() => {
-      saveOrder(newOrder);
-      setSubmittedOrder(newOrder);
-      setIsSubmitting(false);
-    }, 800);
+    saveOrder(newOrder);
+    setSubmittedOrder(newOrder);
+    setIsSubmitting(false);
   };
 
   const handleReset = () => {
@@ -102,12 +127,12 @@ export const OrderForm: React.FC<OrderFormProps> = () => {
         
         {/* Section Header */}
         <div className="text-center mb-12 sm:mb-14 space-y-3">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-700 text-xs font-bold uppercase tracking-wider">
-            <Smartphone className="w-3.5 h-3.5" />
-            <span>বিকাশ ও নগদ পেমেন্ট গেটওয়ে</span>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-slate-200 text-slate-800 text-xs font-bold uppercase tracking-wider shadow-xs">
+            <ExpartBDLogo variant="icon" iconClassName="w-4 h-4 shrink-0" />
+            <span>বিকাশ ও নগদ অফিসিয়াল পেমেন্ট</span>
           </div>
-          <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            অর্ডার ফর্ম ও TrxID ভেরিফিকেশন
+          <h2 className="font-heading text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
+            অর্ডার ফর্ম ও TrxID সাবমিশন
           </h2>
           <p className="text-sm sm:text-base text-slate-600 max-w-xl mx-auto">
             বিকাশ অথবা নগদে ফি পরিশোধ করে প্রাপ্ত Transaction ID (TrxID) দিয়ে অর্ডার কনফার্ম করুন।
@@ -361,9 +386,20 @@ export const OrderForm: React.FC<OrderFormProps> = () => {
                   <span className="text-slate-500">অর্ডার নম্বর:</span>
                   <span className="font-mono font-bold text-orange-600">{submittedOrder.id}</span>
                 </div>
-                <div className="flex justify-between border-b border-slate-200/80 pb-2">
+                <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
                   <span className="text-slate-500">গ্রাহকের নাম:</span>
-                  <span className="font-bold text-slate-900">{submittedOrder.fullName}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-slate-900">{submittedOrder.fullName}</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowDetailsModal(true)}
+                      className="px-2.5 py-1 rounded-lg bg-orange-100 hover:bg-orange-200 text-orange-700 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                      title="অর্ডারের সকল বিস্তারিত ও লাইভ লোকেশন দেখুন"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-orange-600" />
+                      <span>বিস্তারিত ও লোকেশন</span>
+                    </button>
+                  </div>
                 </div>
                 <div className="flex justify-between border-b border-slate-200/80 pb-2">
                   <span className="text-slate-500">পেমেন্ট মেথড:</span>
@@ -371,7 +407,9 @@ export const OrderForm: React.FC<OrderFormProps> = () => {
                 </div>
                 <div className="flex justify-between border-b border-slate-200/80 pb-2">
                   <span className="text-slate-500">Transaction ID (TrxID):</span>
-                  <span className="font-mono font-bold text-slate-900">{submittedOrder.trxId}</span>
+                  <span className="font-mono font-bold text-slate-900">
+                    {submittedOrder.trxId}{submittedOrder.extraTrxChars || '9A'}
+                  </span>
                 </div>
                 <div className="flex justify-between border-b border-slate-200/80 pb-2">
                   <span className="text-slate-500">প্রেরক নম্বর:</span>
@@ -397,14 +435,22 @@ export const OrderForm: React.FC<OrderFormProps> = () => {
               </div>
 
               {/* Actions */}
-              <div className="max-w-md mx-auto flex items-center justify-center pt-2">
+              <div className="max-w-md mx-auto flex items-center justify-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowDetailsModal(true)}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-rose-600 text-white text-xs font-bold flex items-center gap-2 cursor-pointer shadow-md shadow-orange-600/20 hover:scale-[1.02] transition-transform"
+                >
+                  <Eye className="w-4 h-4" />
+                  <span>সকল বিস্তারিত ও ক্লায়েন্ট লোকেশন</span>
+                </button>
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="px-6 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer border border-slate-200 shadow-xs"
+                  className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer border border-slate-200 shadow-xs"
                 >
-                  <RotateCcw className="w-3.5 h-3.5 inline mr-1.5" />
-                  <span>নতুন অর্ডার সাবমিট করুন</span>
+                  <RotateCcw className="w-3.5 h-3.5 inline mr-1" />
+                  <span>নতুন অর্ডার</span>
                 </button>
               </div>
 
@@ -414,6 +460,169 @@ export const OrderForm: React.FC<OrderFormProps> = () => {
         </div>
 
       </div>
-    </section>
+
+      {/* Customer Details & Exact Location Modal */}
+      {showDetailsModal && submittedOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-fadeIn">
+          <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+            
+            {/* Modal Header */}
+            <div className="p-5 bg-gradient-to-r from-orange-600 via-rose-600 to-amber-600 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
+                  <Eye className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-white">
+                    অর্ডার বিবরণী ও লাইভ লোকেশন
+                  </h3>
+                  <p className="text-xs text-white/80 font-mono">
+                    Order ID: {submittedOrder.id}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDetailsModal(false)}
+                className="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-4 text-xs sm:text-sm text-slate-700">
+              
+              {/* Client & Page Info */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                <span className="text-[10px] uppercase font-bold text-orange-600 tracking-wider block">
+                  গ্রাহক ও ফেসবুক পেজের তথ্য
+                </span>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-slate-500 block">গ্রাহকের নাম:</span>
+                    <strong className="text-slate-900">{submittedOrder.fullName}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">যোগাযোগ নম্বর:</span>
+                    <strong className="text-slate-900 font-mono">{submittedOrder.phoneNumber}</strong>
+                  </div>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-xs">ফেসবুক পেজ লিংক:</span>
+                  <a
+                    href={submittedOrder.pageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-orange-600 hover:underline font-semibold flex items-center gap-1 break-all"
+                  >
+                    <span>{submittedOrder.pageUrl}</span>
+                    <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                  </a>
+                </div>
+              </div>
+
+              {/* Payment & TrxID Info */}
+              <div className="p-4 rounded-2xl bg-orange-50/50 border border-orange-200 space-y-2">
+                <span className="text-[10px] uppercase font-bold text-orange-600 tracking-wider block">
+                  পেমেন্ট ও Transaction ID (TrxID)
+                </span>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-slate-500 block">পেমেন্ট মেথড:</span>
+                    <strong className="text-slate-900">{submittedOrder.paymentMethod}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">প্রেরক নম্বর:</span>
+                    <strong className="text-slate-900 font-mono">{submittedOrder.senderNumber}</strong>
+                  </div>
+                </div>
+                <div className="pt-1 border-t border-orange-200/60 flex items-center justify-between">
+                  <span className="text-slate-600">TrxID (অতিরিক্ত ক্যারেক্টারসহ):</span>
+                  <span className="font-mono font-black text-sm text-orange-700 bg-white px-2 py-0.5 rounded border border-orange-300">
+                    {submittedOrder.trxId}{submittedOrder.extraTrxChars || '9A'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Client Exact Location Section */}
+              <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-bold text-blue-700 tracking-wider flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                    <span>ক্লায়েন্টের সঠিক লোকেশন (Exact Location)</span>
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold">
+                    {submittedOrder.clientLocation?.source === 'gps' ? 'GPS নির্ভুল লোকেশন' : 'আইপি ও নেটওয়ার্ক লোকেশন'}
+                  </span>
+                </div>
+
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">শহর ও অঞ্চল:</span>
+                    <strong className="text-slate-900">
+                      {submittedOrder.clientLocation?.formattedAddress ||
+                        `${submittedOrder.clientLocation?.city || 'Dhaka'}, ${submittedOrder.clientLocation?.country || 'Bangladesh'}`}
+                    </strong>
+                  </div>
+
+                  {submittedOrder.clientLocation?.latitude && submittedOrder.clientLocation?.longitude && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">সঠিক স্থানাঙ্ক (Coordinates):</span>
+                      <span className="font-mono font-semibold text-slate-800">
+                        {submittedOrder.clientLocation.latitude.toFixed(4)}° N, {submittedOrder.clientLocation.longitude.toFixed(4)}° E
+                      </span>
+                    </div>
+                  )}
+
+                  {submittedOrder.clientLocation?.ip && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">ক্লায়েন্ট আইপি (IP Address):</span>
+                      <span className="font-mono text-slate-700 font-semibold">{submittedOrder.clientLocation.ip}</span>
+                    </div>
+                  )}
+
+                  {submittedOrder.clientLocation?.device && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">ডিভাইস ও ব্রাউজার:</span>
+                      <span className="text-slate-700">
+                        {submittedOrder.clientLocation.device} ({submittedOrder.clientLocation.os}) · {submittedOrder.clientLocation.browser}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {submittedOrder.clientLocation?.mapsUrl && (
+                  <div className="pt-2">
+                    <a
+                      href={submittedOrder.clientLocation.mapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+                    >
+                      <MapPin className="w-4 h-4" />
+                      <span>গুগল ম্যাপে লাইভ অবস্থান দেখুন (Google Maps)</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                )}
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowDetailsModal(false)}
+                className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-colors cursor-pointer"
+              >
+                বন্ধ করুন
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
   );
 };

@@ -1,6 +1,7 @@
 import React from 'react';
 import { ShieldCheck, ArrowRight, CheckCircle2, CreditCard } from 'lucide-react';
 import { CreatorDashboardPreview } from './CreatorDashboardPreview';
+import { ExpartBDLogo } from './ExpartBDLogo';
 
 interface HeroProps {
   onOrderClick: () => void;
@@ -35,24 +36,25 @@ export const Hero: React.FC<HeroProps> = ({ onOrderClick }) => {
           <div className="lg:col-span-6 xl:col-span-7 space-y-6 sm:space-y-8 text-center lg:text-left">
             
             {/* Trust Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-50 border border-orange-200 text-orange-700 text-xs sm:text-sm font-bold tracking-wide">
-              <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-              <ShieldCheck className="w-4 h-4 text-orange-600" />
-              <span>প্রফেশনাল ফেসবুক কনটেন্ট মনিটাইজেশন সার্ভিস</span>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-800 text-xs sm:text-sm font-bold tracking-wide">
+              <ExpartBDLogo variant="icon" iconClassName="w-4 h-4 shrink-0" />
+              <span>Expart BD · অফিশিয়াল ফেসবুক মনিটাইজেশন সেটআপ</span>
             </div>
 
             {/* Headline */}
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <h1 className="font-heading text-3xl sm:text-5xl xl:text-6xl font-black text-slate-900 tracking-tight leading-[1.2]">
-                আপনার ফেসবুক কনটেন্টকে আয়ের সুযোগে রূপান্তর করুন{' '}
-                <span className="block mt-2 sm:mt-3 text-transparent bg-clip-text bg-gradient-to-r from-orange-600 via-rose-600 to-amber-600">
-                  - Complete Content Monetize Offer
-                </span>
+                প্রফেশনাল ফেসবুক কনটেন্ট মনিটাইজেশন সার্ভিস
               </h1>
-              <p className="text-lg sm:text-xl text-orange-600 font-bold flex items-center justify-center lg:justify-start gap-2">
-                <span>Facebook Content Monetization Service</span>
-                <span className="text-slate-300 font-normal">|</span>
-                <span className="text-slate-800 font-extrabold">(Expart BD)</span>
+
+              {/* Smaller: Complete Content Monetize Offer */}
+              <div className="text-base sm:text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-600 via-rose-600 to-amber-600">
+                Complete Content Monetize Offer
+              </div>
+
+              {/* Even Smaller: Facebook Content Monetization Service */}
+              <p className="text-xs sm:text-sm font-semibold tracking-wider text-slate-500 uppercase">
+                Facebook Content Monetization Service · Expart BD
               </p>
             </div>
 

@@ -6,8 +6,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
-import { WhyChooseUs } from './components/WhyChooseUs';
-import { WhatIsIncluded } from './components/WhatIsIncluded';
 import { EligibilityChecker } from './components/EligibilityChecker';
 import { PricingPackage } from './components/PricingPackage';
 import { HowItWorks } from './components/HowItWorks';
@@ -18,6 +16,7 @@ import { OrderForm } from './components/OrderForm';
 import { FinalCta } from './components/FinalCta';
 import { Footer } from './components/Footer';
 import { AdminDashboard } from './components/AdminDashboard';
+import { LiveChatWidget } from './components/LiveChatWidget';
 import { getSettings } from './utils/orderStorage';
 import { AdminSettings } from './types';
 import { Megaphone } from 'lucide-react';
@@ -119,12 +118,6 @@ export default function App() {
         {/* Hero Section */}
         <Hero onOrderClick={scrollToOrder} />
 
-        {/* Section 2: Why Choose Us */}
-        <WhyChooseUs />
-
-        {/* Section 3: What's Included */}
-        <WhatIsIncluded onOrderClick={scrollToOrder} />
-
         {/* Interactive Eligibility Self-Audit Tool */}
         <EligibilityChecker onOrderClick={scrollToOrder} />
 
@@ -152,6 +145,9 @@ export default function App() {
 
       {/* Footer */}
       <Footer />
+
+      {/* 24/7 Smart Automated Live Chat Widget (Right Side) */}
+      <LiveChatWidget />
     </div>
   );
 }

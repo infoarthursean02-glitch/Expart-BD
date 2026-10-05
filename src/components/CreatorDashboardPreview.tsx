@@ -11,6 +11,7 @@ import {
   ArrowUpRight,
   Flame
 } from 'lucide-react';
+import { ExpartBDLogo } from './ExpartBDLogo';
 
 export const CreatorDashboardPreview: React.FC = () => {
   return (
@@ -46,9 +47,7 @@ export const CreatorDashboardPreview: React.FC = () => {
           {/* Header Page Card */}
           <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-orange-50/40 border border-orange-200/60">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-orange-600 via-rose-600 to-amber-500 flex items-center justify-center font-black text-white shadow-md text-lg">
-                E
-              </div>
+              <ExpartBDLogo variant="icon" iconClassName="w-12 h-12" />
               <div>
                 <div className="flex items-center gap-1.5">
                   <h4 className="text-sm sm:text-base font-bold text-slate-900">আপনার ফেসবুক পেজ</h4>
@@ -59,9 +58,9 @@ export const CreatorDashboardPreview: React.FC = () => {
             </div>
             <div className="text-right">
               <div className="text-[10px] uppercase tracking-wider text-slate-500 font-mono">সার্ভিস স্ট্যাটাস</div>
-              <div className="text-xs font-bold text-orange-600 flex items-center gap-1 justify-end">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                Expart BD অ্যাক্টিভ
+              <div className="text-xs font-bold text-orange-600 flex items-center gap-1.5 justify-end">
+                <ExpartBDLogo variant="icon" iconClassName="w-3.5 h-3.5 inline-block shrink-0" />
+                <span>Expart BD অ্যাক্টিভ</span>
               </div>
             </div>
           </div>

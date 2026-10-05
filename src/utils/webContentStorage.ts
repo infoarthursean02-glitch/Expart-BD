@@ -75,10 +75,10 @@ const WEB_CONTENT_KEY = 'expart_bd_web_content_v1';
 
 export const DEFAULT_WEB_CONTENT: WebContent = {
   // Hero
-  heroBadge: 'প্রফেশনাল ফেসবুক কনটেন্ট মনিটাইজেশন সার্ভিস',
-  heroHeadline: 'আপনার ফেসবুক কনটেন্টকে আয়ের সুযোগে রূপান্তর করুন - Complete Content Monetize Offer',
-  heroBrandHighlight: '(Expart BD)',
-  heroSubtitle: 'Facebook Content Monetization Service',
+  heroBadge: 'Expart BD · অফিশিয়াল ফেসবুক মনিটাইজেশন সেটআপ',
+  heroHeadline: 'প্রফেশনাল ফেসবুক কনটেন্ট মনিটাইজেশন সার্ভিস',
+  heroBrandHighlight: 'Complete Content Monetize Offer',
+  heroSubtitle: 'Facebook Content Monetization Service · Expart BD',
   heroDescription: 'আপনার Facebook Content Monetization শুরু করার জন্য প্রয়োজনীয় সার্ভিস এখন এক প্যাকেজে। বিকাশ ও নগদ পেমেন্ট করে TrxID দিন এবং স্বয়ংক্রিয় ভেরিফিকেশনে সার্ভিস গ্রহণ করুন।',
   heroPriceBadge: 'প্যাকেজ মূল্য: মাত্র ৳২,৯৯৯ (এককালীন সার্ভিস ফি)',
   heroButtonText: 'অর্ডার করুন ও TrxID দিন',

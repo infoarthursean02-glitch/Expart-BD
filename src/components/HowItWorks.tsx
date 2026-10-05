@@ -1,5 +1,6 @@
 import React from 'react';
 import { Send, Settings, Headset, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { ExpartBDLogo } from './ExpartBDLogo';
 
 interface HowItWorksProps {
   onOrderClick: () => void;
@@ -34,15 +35,16 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({ onOrderClick }) => {
   ];
 
   return (
-    <section id="how-it-works" className="py-20 sm:py-24 relative overflow-hidden bg-slate-50/70 border-y border-slate-200">
+    <section id="how-it-works" className="py-20 sm:py-26 relative overflow-hidden bg-slate-50/80 border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
-          <div className="text-xs uppercase tracking-widest text-orange-600 font-bold">
-            সহজ ৩টি ধাপ
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-slate-200 text-slate-800 text-xs font-bold uppercase tracking-wider shadow-xs">
+            <ExpartBDLogo variant="icon" iconClassName="w-4 h-4 shrink-0" />
+            <span>স্বচ্ছ প্রসেস · সহজ ৩টি ধাপ</span>
           </div>
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+          <h2 className="font-heading text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
             যেভাবে কাজ করে (How It Works)
           </h2>
           <p className="text-sm sm:text-base text-slate-600">

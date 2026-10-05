@@ -30,9 +30,14 @@ import {
   ListPlus,
   Edit2,
   Megaphone,
-  X
+  X,
+  MessageSquare,
+  MapPin,
+  Send,
+  Globe
 } from 'lucide-react';
-import { OrderRecord, OrderStatus, AdminSettings, PaymentMethod, FaqItem, PackageFeatureItem } from '../types';
+import { OrderRecord, OrderStatus, AdminSettings, PaymentMethod, FaqItem, PackageFeatureItem, ChatSession } from '../types';
+import { ExpartBDLogo } from './ExpartBDLogo';
 import { 
   getOrders, 
   updateOrderStatus, 
@@ -50,6 +55,11 @@ import {
   updatePackageFeature,
   deletePackageFeature
 } from '../utils/orderStorage';
+import { 
+  getChatSessions, 
+  sendAdminReply, 
+  markSessionAsReadByAdmin 
+} from '../utils/chatStorage';
 
 interface AdminDashboardProps {
   onBackToWeb: () => void;
@@ -66,7 +76,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
   const [loginError, setLoginError] = useState(false);
 
   // Navigation Tab State
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'pending' | 'add_order' | 'faqs' | 'features' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'pending' | 'add_order' | 'chats' | 'faqs' | 'features' | 'settings'>('dashboard');
 
   // Orders & Settings State
   const [orders, setOrders] = useState<OrderRecord[]>([]);
@@ -76,6 +86,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [copiedTrxId, setCopiedTrxId] = useState<string | null>(null);
+
+  // Order Details Modal State (Customer Name, TrxID, Exact Location, etc.)
+  const [selectedOrderForDetails, setSelectedOrderForDetails] = useState<OrderRecord | null>(null);
+
+  // Live Chat Management State
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [adminReplyInput, setAdminReplyInput] = useState('');
 
   // Invoice / Receipt Modal
   const [selectedReceiptOrder, setSelectedReceiptOrder] = useState<OrderRecord | null>(null);
@@ -124,6 +142,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
     setSettingsForm(currentSettings);
     setFaqsState(getFaqs());
     setFeaturesState(getPackageFeatures());
+    setChatSessions(getChatSessions());
   };
 
   useEffect(() => {
@@ -132,16 +151,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
     const handleSettingsChange = () => loadData();
     const handleFaqsChange = () => loadData();
     const handleFeaturesChange = () => loadData();
+    const handleChatChange = () => setChatSessions(getChatSessions());
 
     window.addEventListener('expart_order_changed', handleOrderChange);
     window.addEventListener('expart_settings_changed', handleSettingsChange);
     window.addEventListener('expart_faqs_changed', handleFaqsChange);
     window.addEventListener('expart_features_changed', handleFeaturesChange);
+    window.addEventListener('expart_chat_changed', handleChatChange);
     return () => {
       window.removeEventListener('expart_order_changed', handleOrderChange);
       window.removeEventListener('expart_settings_changed', handleSettingsChange);
       window.removeEventListener('expart_faqs_changed', handleFaqsChange);
       window.removeEventListener('expart_features_changed', handleFeaturesChange);
+      window.removeEventListener('expart_chat_changed', handleChatChange);
     };
   }, []);
 
@@ -353,17 +375,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-r from-orange-200/40 via-rose-100/30 to-amber-100/40 rounded-full blur-[140px] pointer-events-none" />
 
         <div className="w-full max-w-md rounded-3xl bg-white border border-slate-200 p-8 shadow-2xl text-center space-y-6 relative z-10">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-orange-600 via-rose-600 to-amber-500 flex items-center justify-center text-white mx-auto shadow-lg shadow-orange-600/30">
-            <Lock className="w-8 h-8" />
-          </div>
-
-          <div className="space-y-1.5">
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-              Expart BD অ্যাডমিন প্যানেল
-            </h2>
-            <p className="text-xs text-orange-600 font-medium">
-              পেমেন্ট TrxID ভেরিফিকেশন ও সম্পূর্ণ CMS ম্যানেজমেন্ট
-            </p>
+          <div className="flex flex-col items-center justify-center space-y-2">
+            <ExpartBDLogo variant="full" iconClassName="w-16 h-16" className="justify-center" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold mt-2">
+              <Lock className="w-3.5 h-3.5 text-orange-600" />
+              <span>অ্যাডমিন কন্ট্রোল প্যানেল লগইন</span>
+            </div>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4 text-left">
@@ -456,9 +473,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
       {/* Top Navigation Bar */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-orange-600 via-rose-600 to-amber-500 flex items-center justify-center font-black text-white shadow-md text-base">
-            E
-          </div>
+          <ExpartBDLogo variant="icon" iconClassName="w-9 h-9" />
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight">
@@ -586,6 +601,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
               <PlusCircle className="w-4 h-4 text-emerald-600" />
               <span>ম্যানুয়াল অর্ডার এন্ট্রি</span>
             </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('chats')}
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              activeTab === 'chats'
+                ? 'bg-gradient-to-r from-orange-600 to-rose-600 text-white shadow-md shadow-orange-600/25'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <MessageSquare className="w-4 h-4 text-emerald-500" />
+              <span>লাইভ চ্যাট ও প্রশ্ন-উত্তর</span>
+            </div>
+            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-mono font-bold">
+              {chatSessions.length}
+            </span>
           </button>
 
           <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider px-3 pt-3 mb-1">
@@ -782,6 +815,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                             <div className="flex items-center gap-2">
                               <span className="font-mono font-bold text-orange-700 bg-orange-100 px-2 py-0.5 rounded">{ord.id}</span>
                               <span className="text-slate-900 font-bold">{ord.fullName}</span>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedOrderForDetails(ord)}
+                                className="px-2 py-0.5 rounded-md bg-orange-100 hover:bg-orange-200 text-orange-700 transition-colors flex items-center gap-1 text-[11px] font-bold cursor-pointer"
+                                title="অর্ডারের সকল বিস্তারিত ও লাইভ লোকেশন দেখুন"
+                              >
+                                <Eye className="w-3.5 h-3.5 text-orange-600" />
+                                <span>বিস্তারিত ও লোকেশন</span>
+                              </button>
                               <span className="text-slate-400">·</span>
                               <span className="font-mono text-slate-600">{ord.phoneNumber}</span>
                             </div>
@@ -1031,7 +1073,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                         <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
                           <span className="text-[10px] uppercase font-mono text-slate-500 block">গ্রাহকের নাম ও ফোন</span>
-                          <div className="font-bold text-slate-900 text-sm">{order.fullName}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="font-bold text-slate-900 text-sm">{order.fullName}</div>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedOrderForDetails(order)}
+                              className="px-2 py-0.5 rounded-lg bg-orange-100 hover:bg-orange-200 text-orange-700 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                              title="অর্ডারের সকল বিস্তারিত ও ক্লায়েন্টের লাইভ লোকেশন দেখুন"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-orange-600" />
+                              <span>বিস্তারিত ও লোকেশন</span>
+                            </button>
+                          </div>
                           <div className="font-mono text-slate-600 font-semibold">{order.phoneNumber}</div>
                         </div>
 
@@ -1137,6 +1190,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                         </div>
 
                         <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedOrderForDetails(order)}
+                            className="px-2.5 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>পূর্ণ বিবরণ ও লোকেশন</span>
+                          </button>
+
                           <button
                             type="button"
                             onClick={() => setSelectedReceiptOrder(order)}
@@ -1426,6 +1488,218 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                   </button>
                 </form>
               </div>
+            </div>
+          )}
+
+          {/* TAB: LIVE CHATS MANAGEMENT */}
+          {activeTab === 'chats' && (
+            <div className="space-y-6">
+              
+              {/* Header */}
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
+                    <MessageSquare className="w-6 h-6 text-emerald-600" />
+                    <span>লাইভ চ্যাট কনভারসেশন ও অটোমেটিক এআই রিপ্লাই</span>
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-500">
+                    ওয়েবসাইটের লাইভ চ্যাটে গ্রাহকরা যে প্রশ্নই করুক, আমাদের সিস্টেম স্বয়ংক্রিয়ভাবে উত্তর দেয়। প্রয়োজনে আপনি সরাসরিও মেসেজ পাঠাতে পারেন।
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>অটো-রিপ্লাই ইঞ্জিন সক্রিয় (২৪/৭)</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Chat Dual Pane Container */}
+              {chatSessions.length === 0 ? (
+                <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 space-y-3 shadow-xs">
+                  <div className="w-14 h-14 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center mx-auto border border-orange-200">
+                    <MessageSquare className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900">কোনো চ্যাট মেসেজ নেই</h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                    গ্রাহকরা সাইটের ডানদিকের লাইভ চ্যাটে প্রশ্ন করলে এখানে স্বয়ংক্রিয়ভাবে কনভারসেশন জমা হবে।
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm min-h-[580px]">
+                  
+                  {/* Left Column: Sessions List */}
+                  <div className="lg:col-span-4 border-r border-slate-100 flex flex-col h-full bg-slate-50/50">
+                    <div className="p-4 border-b border-slate-200 bg-white">
+                      <div className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        সকল কনভারসেশন ({chatSessions.length})
+                      </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
+                      {chatSessions.map((sess) => {
+                        const isSelected = (selectedChatId || chatSessions[0]?.id) === sess.id;
+                        const lastMsg = sess.messages[sess.messages.length - 1];
+
+                        return (
+                          <button
+                            key={sess.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedChatId(sess.id);
+                              markSessionAsReadByAdmin(sess.id);
+                            }}
+                            className={`w-full text-left p-4 transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-orange-50/80 border-l-4 border-orange-600'
+                                : 'hover:bg-slate-100/80'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className="font-bold text-xs text-slate-900 truncate">
+                                {sess.clientName || 'গ্রাহক (অনলাইন ভিজিটর)'}
+                              </span>
+                              <span className="text-[10px] text-slate-400 font-mono shrink-0">
+                                {sess.updatedAt}
+                              </span>
+                            </div>
+
+                            {sess.clientLocation?.city && (
+                              <div className="text-[10px] text-blue-600 flex items-center gap-1 mb-1 font-medium truncate">
+                                <MapPin className="w-3 h-3 shrink-0" />
+                                <span>{sess.clientLocation.city}, {sess.clientLocation.country || 'Bangladesh'}</span>
+                              </div>
+                            )}
+
+                            <p className="text-xs text-slate-500 truncate line-clamp-1">
+                              {lastMsg ? lastMsg.text : 'কোনো মেসেজ নেই'}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Right Column: Chat Transcript & Admin Reply Box */}
+                  {(() => {
+                    const currentChat = chatSessions.find(
+                      (s) => s.id === (selectedChatId || chatSessions[0]?.id)
+                    ) || chatSessions[0];
+
+                    if (!currentChat) return null;
+
+                    const handleSendReply = (e: React.FormEvent) => {
+                      e.preventDefault();
+                      if (!adminReplyInput.trim()) return;
+                      sendAdminReply(currentChat.id, adminReplyInput.trim());
+                      setAdminReplyInput('');
+                    };
+
+                    return (
+                      <div className="lg:col-span-8 flex flex-col h-full bg-white">
+                        
+                        {/* Conversation Header */}
+                        <div className="p-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-slate-50/70">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-sm text-slate-900">
+                                {currentChat.clientName || 'গ্রাহক'}
+                              </span>
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                                সক্রিয়
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              ID: {currentChat.id} · শুরু: {currentChat.createdAt}
+                            </span>
+                          </div>
+
+                          {currentChat.clientLocation && (
+                            <div className="text-right text-xs">
+                              <div className="flex items-center gap-1 text-blue-700 font-semibold">
+                                <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                                <span>{currentChat.clientLocation.formattedAddress || currentChat.clientLocation.city}</span>
+                              </div>
+                              {currentChat.clientLocation.mapsUrl && (
+                                <a
+                                  href={currentChat.clientLocation.mapsUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[10px] text-orange-600 hover:underline inline-flex items-center gap-1"
+                                >
+                                  <span>ম্যাপে অবস্থান দেখুন</span>
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Transcript */}
+                        <div className="flex-1 p-5 overflow-y-auto space-y-4 bg-slate-50/40 max-h-[460px]">
+                          {currentChat.messages.map((m) => {
+                            const isClient = m.sender === 'client';
+                            const isAdmin = m.sender === 'admin';
+
+                            return (
+                              <div
+                                key={m.id}
+                                className={`flex flex-col ${isClient ? 'items-start' : 'items-end'}`}
+                              >
+                                <div className="text-[10px] text-slate-400 mb-1 px-1 font-mono">
+                                  {isClient ? 'গ্রাহকের প্রশ্ন' : isAdmin ? '👨‍💼 অ্যাডমিন উত্তর' : '🤖 অটোমেটিক এআই উত্তর'} · {m.timestamp}
+                                </div>
+                                <div
+                                  className={`max-w-[85%] px-4 py-3 rounded-2xl text-xs sm:text-sm leading-relaxed whitespace-pre-line shadow-xs ${
+                                    isClient
+                                      ? 'bg-white border border-slate-200 text-slate-900 rounded-tl-xs'
+                                      : isAdmin
+                                      ? 'bg-gradient-to-r from-orange-600 to-rose-600 text-white rounded-tr-xs'
+                                      : 'bg-emerald-50 border border-emerald-200 text-emerald-950 rounded-tr-xs'
+                                  }`}
+                                >
+                                  {m.text}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Admin Human Reply Bar */}
+                        <form
+                          onSubmit={handleSendReply}
+                          className="p-4 border-t border-slate-200 bg-white space-y-2"
+                        >
+                          <div className="flex items-center justify-between text-[11px] text-slate-500">
+                            <span>ক্লিয়েন্টকে স্বয়ংক্রিয়ভাবে রোবট উত্তর দেওয়া হয়। তবে প্রয়োজন হলে আপনি সরাসরি যেকোনো উত্তর দিতে পারেন:</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={adminReplyInput}
+                              onChange={(e) => setAdminReplyInput(e.target.value)}
+                              placeholder="অ্যাডমিন হিসেবে ক্লায়েন্টকে উত্তর লিখুন..."
+                              className="flex-1 px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                            />
+                            <button
+                              type="submit"
+                              disabled={!adminReplyInput.trim()}
+                              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-rose-600 hover:from-orange-500 hover:to-amber-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-orange-600/20 disabled:opacity-40"
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                              <span>পাঠান</span>
+                            </button>
+                          </div>
+                        </form>
+
+                      </div>
+                    );
+                  })()}
+
+                </div>
+              )}
+
             </div>
           )}
 
@@ -1837,8 +2111,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
           <div className="relative w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-5 text-slate-800 text-xs">
             
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-orange-600 flex items-center justify-center font-black text-white">E</div>
+              <div className="flex items-center gap-2.5">
+                <ExpartBDLogo variant="icon" iconClassName="w-8 h-8" />
                 <div>
                   <h4 className="font-bold text-slate-900 text-sm">Expart BD — মানি রিসিট</h4>
                   <span className="text-[10px] text-slate-500 font-mono">Invoice #{selectedReceiptOrder.id}</span>
@@ -1903,6 +2177,269 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                 className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer"
               >
                 বন্ধ
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Comprehensive Order Details & Client Exact Location Modal */}
+      {selectedOrderForDetails && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-fadeIn">
+          <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
+            
+            {/* Modal Header */}
+            <div className="p-5 bg-gradient-to-r from-orange-600 via-rose-600 to-amber-600 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                  <Eye className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-white">
+                    সকল অর্ডার বিবরণী ও গ্রাহকের সঠিক লোকেশন
+                  </h3>
+                  <p className="text-xs text-white/80 font-mono">
+                    Order ID: {selectedOrderForDetails.id} · {selectedOrderForDetails.createdAt}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedOrderForDetails(null)}
+                className="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Scrollable Body */}
+            <div className="p-6 overflow-y-auto space-y-4 text-xs sm:text-sm text-slate-700">
+              
+              {/* Order Status Badge & Quick Change */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-500 font-semibold">বর্তমান স্ট্যাটাস:</span>
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-800 border border-orange-200">
+                    {selectedOrderForDetails.status}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleStatusChange(selectedOrderForDetails.id, 'verified');
+                      setSelectedOrderForDetails({ ...selectedOrderForDetails, status: 'verified' });
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold border border-blue-200 cursor-pointer"
+                  >
+                    ✓ ভেরিফাই
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleStatusChange(selectedOrderForDetails.id, 'in_progress');
+                      setSelectedOrderForDetails({ ...selectedOrderForDetails, status: 'in_progress' });
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 text-xs font-bold border border-purple-200 cursor-pointer"
+                  >
+                    ⚙️ প্রসেসিং
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleStatusChange(selectedOrderForDetails.id, 'completed');
+                      setSelectedOrderForDetails({ ...selectedOrderForDetails, status: 'completed' });
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold border border-emerald-200 cursor-pointer"
+                  >
+                    🎉 সম্পন্ন
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleStatusChange(selectedOrderForDetails.id, 'rejected');
+                      setSelectedOrderForDetails({ ...selectedOrderForDetails, status: 'rejected' });
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold border border-rose-200 cursor-pointer"
+                  >
+                    বাতিল
+                  </button>
+                </div>
+              </div>
+
+              {/* 1. Customer & Page Information */}
+              <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-2.5">
+                <span className="text-[10px] uppercase font-bold text-orange-600 tracking-wider block">
+                  গ্রাহক ও ফেসবুক পেজের তথ্য
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <span className="text-slate-500 block">গ্রাহকের নাম:</span>
+                    <strong className="text-slate-900 text-sm">{selectedOrderForDetails.fullName}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">যোগাযোগ নম্বর:</span>
+                    <a href={`tel:${selectedOrderForDetails.phoneNumber}`} className="text-orange-600 font-mono font-bold hover:underline">
+                      {selectedOrderForDetails.phoneNumber}
+                    </a>
+                  </div>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-xs">ফেসবুক পেজ বা প্রোফাইল লিংক:</span>
+                  <a
+                    href={selectedOrderForDetails.pageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-orange-600 hover:underline font-semibold flex items-center gap-1.5 break-all"
+                  >
+                    <span>{selectedOrderForDetails.pageUrl}</span>
+                    <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                  </a>
+                </div>
+              </div>
+
+              {/* 2. Payment & TrxID Information */}
+              <div className="p-4 rounded-2xl bg-orange-50/40 border border-orange-200 space-y-2.5">
+                <span className="text-[10px] uppercase font-bold text-orange-600 tracking-wider block">
+                  পেমেন্ট ও Transaction ID (TrxID)
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div>
+                    <span className="text-slate-500 block">পেমেন্ট মেথড:</span>
+                    <span className="font-bold text-orange-700">{selectedOrderForDetails.paymentMethod}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">প্রেরক নম্বর:</span>
+                    <span className="font-mono font-bold text-slate-900">{selectedOrderForDetails.senderNumber}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">প্যাকেজ ফি:</span>
+                    <span className="font-bold text-emerald-700">৳{selectedOrderForDetails.amount}</span>
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-orange-200/60 flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <span className="text-slate-600 block text-xs">
+                      Transaction ID (পপআপের অতিরিক্ত অক্ষরসহ):
+                    </span>
+                    <span className="font-mono font-black text-base text-slate-900 tracking-wider">
+                      {selectedOrderForDetails.trxId}
+                      {selectedOrderForDetails.extraTrxChars && (
+                        <span className="text-orange-600 bg-orange-100 px-1 rounded ml-1">
+                          {selectedOrderForDetails.extraTrxChars}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyTrx(selectedOrderForDetails.trxId)}
+                    className="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>TrxID কপি</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 3. Client Exact Location Details */}
+              <div className="p-4 rounded-2xl bg-blue-50/50 border border-blue-200 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-[10px] uppercase font-bold text-blue-700 tracking-wider flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4 text-blue-600" />
+                    <span>ক্লায়েন্টের সঠিক অবস্থান (Client Exact Location)</span>
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold">
+                    {selectedOrderForDetails.clientLocation?.source === 'gps'
+                      ? 'GPS নির্ভুল লোকেশন'
+                      : 'আইপি ও নেটওয়ার্ক লোকেশন'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-slate-500 block">শহর ও অঞ্চল:</span>
+                    <strong className="text-slate-900">
+                      {selectedOrderForDetails.clientLocation?.formattedAddress ||
+                        `${selectedOrderForDetails.clientLocation?.city || 'ঢাকা'}, ${selectedOrderForDetails.clientLocation?.country || 'বাংলাদেশ'}`}
+                    </strong>
+                  </div>
+
+                  {selectedOrderForDetails.clientLocation?.latitude && selectedOrderForDetails.clientLocation?.longitude && (
+                    <div>
+                      <span className="text-slate-500 block">সঠিক স্থানাঙ্ক (Coordinates):</span>
+                      <span className="font-mono font-bold text-blue-900">
+                        {selectedOrderForDetails.clientLocation.latitude.toFixed(5)}° N, {selectedOrderForDetails.clientLocation.longitude.toFixed(5)}° E
+                      </span>
+                    </div>
+                  )}
+
+                  {selectedOrderForDetails.clientLocation?.ip && (
+                    <div>
+                      <span className="text-slate-500 block">ক্লায়েন্ট আইপি (IP):</span>
+                      <span className="font-mono font-semibold text-slate-800">{selectedOrderForDetails.clientLocation.ip}</span>
+                    </div>
+                  )}
+
+                  {selectedOrderForDetails.clientLocation?.device && (
+                    <div>
+                      <span className="text-slate-500 block">ডিভাইস ও ব্রাউজার:</span>
+                      <span className="text-slate-800">
+                        {selectedOrderForDetails.clientLocation.device} ({selectedOrderForDetails.clientLocation.os}) · {selectedOrderForDetails.clientLocation.browser}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Google Maps Button */}
+                {selectedOrderForDetails.clientLocation?.mapsUrl && (
+                  <div className="pt-2 flex flex-col sm:flex-row gap-2">
+                    <a
+                      href={selectedOrderForDetails.clientLocation.mapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
+                    >
+                      <MapPin className="w-4 h-4" />
+                      <span>গুগল ম্যাপে সরাসরি লোকেশন পিন দেখুন (Google Maps)</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              {/* Customer Notes */}
+              {selectedOrderForDetails.notes && (
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                  <span className="text-[10px] uppercase font-mono text-slate-500 block">গ্রাহকের নোট:</span>
+                  <p className="text-xs text-slate-700">{selectedOrderForDetails.notes}</p>
+                </div>
+              )}
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedReceiptOrder(selectedOrderForDetails);
+                  setSelectedOrderForDetails(null);
+                }}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer border border-slate-200"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>মানি রিসিট দেখুন</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedOrderForDetails(null)}
+                className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-colors cursor-pointer"
+              >
+                বন্ধ করুন
               </button>
             </div>
 

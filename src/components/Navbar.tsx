@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X, ChevronRight } from 'lucide-react';
+import { ExpartBDLogo } from './ExpartBDLogo';
 
 interface NavbarProps {
   onOrderClick: () => void;
@@ -19,8 +20,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onOrderClick }) => {
 
   const navLinks = [
     { name: 'হোম', href: '#hero' },
-    { name: 'কেন এক্সপার্ট বিডি', href: '#why-us' },
-    { name: 'সার্ভিসসমূহ', href: '#whats-included' },
     { name: 'প্যাকেজ', href: '#package' },
     { name: 'যেভাবে কাজ করে', href: '#how-it-works' },
     { name: 'ক্রিয়েটরদের জন্য', href: '#creators' },
@@ -51,19 +50,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onOrderClick }) => {
           <a
             href="#hero"
             onClick={(e) => handleNavClick(e, '#hero')}
-            className="flex items-center gap-2.5 group"
+            className="flex items-center gap-2.5 group transition-transform hover:scale-[1.02] cursor-pointer"
+            aria-label="Expart BD Home"
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-600 via-rose-600 to-amber-500 flex items-center justify-center text-white shadow-md shadow-orange-600/30 group-hover:scale-105 transition-transform">
-              <span className="font-black text-xl tracking-tight">E</span>
-            </div>
-            <div>
-              <span className="font-extrabold text-xl tracking-tight text-slate-900 flex items-center gap-1.5">
-                Expart <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-rose-600">BD</span>
-              </span>
-              <span className="block text-[10px] text-orange-600 font-semibold tracking-wider">
-                ফেসবুক মনিটাইজেশন সার্ভিস
-              </span>
-            </div>
+            <ExpartBDLogo variant="full" iconClassName="w-10 h-10 sm:w-11 sm:h-11" />
           </a>
 
           {/* Desktop Nav Links in Bangla */}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Video, Smartphone, Film, Rocket, Building2, CheckCircle2 } from 'lucide-react';
+import { ExpartBDLogo } from './ExpartBDLogo';
 
 export const TargetAudience: React.FC = () => {
   const audiences = [
@@ -41,15 +42,16 @@ export const TargetAudience: React.FC = () => {
   ];
 
   return (
-    <section id="creators" className="py-20 sm:py-24 relative overflow-hidden bg-white">
+    <section id="creators" className="py-20 sm:py-26 relative overflow-hidden bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-14 space-y-3">
-          <div className="text-xs uppercase tracking-widest text-orange-600 font-bold">
-            কাদের জন্য এই সার্ভিস?
+        <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-800 text-xs font-bold uppercase tracking-wider shadow-xs">
+            <ExpartBDLogo variant="icon" iconClassName="w-4 h-4 shrink-0" />
+            <span>কাদের জন্য এই সার্ভিস?</span>
           </div>
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+          <h2 className="font-heading text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
             ফেসবুক ক্রিয়েটরদের জন্য পারফেক্ট (Perfect For Facebook Creators)
           </h2>
           <p className="text-sm sm:text-base text-slate-600">

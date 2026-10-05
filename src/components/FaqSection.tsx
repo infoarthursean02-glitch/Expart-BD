@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronDown, HelpCircle, CreditCard } from 'lucide-react';
 import { FaqItem } from '../types';
 import { getFaqs } from '../utils/orderStorage';
+import { ExpartBDLogo } from './ExpartBDLogo';
 
 export const FaqSection: React.FC = () => {
   const [faqs, setFaqs] = useState<FaqItem[]>(getFaqs());
@@ -18,16 +19,17 @@ export const FaqSection: React.FC = () => {
   };
 
   return (
-    <section id="faq" className="py-20 sm:py-24 relative overflow-hidden bg-white">
+    <section id="faq" className="py-20 sm:py-26 relative overflow-hidden bg-white border-t border-slate-200">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header */}
         <div className="text-center mb-14 space-y-3">
-          <div className="text-xs uppercase tracking-widest text-orange-600 font-bold">
-            সাধারণ জিজ্ঞাসা
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-800 text-xs font-bold uppercase tracking-wider shadow-xs">
+            <ExpartBDLogo variant="icon" iconClassName="w-4 h-4 shrink-0" />
+            <span>সচরাচর জিজ্ঞাসা (FAQ)</span>
           </div>
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-            সচরাচর জিজ্ঞাসিত প্রশ্নাবলী (FAQ)
+          <h2 className="font-heading text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
+            প্রশ্নোত্তর ও সাধারণ জিজ্ঞাসা
           </h2>
           <p className="text-sm sm:text-base text-slate-600">
             ফেসবুক মনিটাইজেশন প্যাকেজ ও পেমেন্ট পদ্ধতি সম্পর্কে আপনার যাবতীয় প্রশ্নের স্পষ্ট উত্তর
