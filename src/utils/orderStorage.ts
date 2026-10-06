@@ -16,7 +16,89 @@ const DEFAULT_SETTINGS: AdminSettings = {
   announcementText: '🔥 বিশেষ অফার: সম্পূর্ণ ফেসবুক মনিটাইজেশন প্যাকেজ এখন মাত্র ৳২,৯৯৯ টাকায়!',
 };
 
-const INITIAL_ORDERS: OrderRecord[] = [];
+const INITIAL_ORDERS: OrderRecord[] = [
+  {
+    id: 'EXP-3543',
+    fullName: 'Mizan',
+    phoneNumber: '01601300122',
+    pageUrl: 'https://facebook.com/mizan.page',
+    paymentMethod: 'bKash',
+    senderNumber: '01601300122',
+    trxId: 'BDHINDKRXR',
+    extraTrxChars: '9A',
+    amount: 2999,
+    status: 'checking',
+    createdAt: 'আজ, ১২:৪৯ PM',
+    notes: 'ফেসবুক পেজ মনিটাইজেশন সার্ভিস সেটআপ',
+    clientLocation: {
+      ip: '103.145.74.12',
+      city: 'ঢাকা',
+      country: 'বাংলাদেশ',
+      formattedAddress: 'ঢাকা, বাংলাদেশ',
+      latitude: 23.8103,
+      longitude: 90.4125,
+      mapsUrl: 'https://www.google.com/maps?q=23.8103,90.4125',
+      source: 'ip',
+      device: 'Desktop',
+      os: 'Windows',
+      browser: 'Chrome'
+    }
+  }
+];
+
+// Cross-tab broadcast channel for instant multi-window sync
+const orderBroadcast = typeof window !== 'undefined' && 'BroadcastChannel' in window
+  ? new BroadcastChannel('expart_orders_sync_channel')
+  : null;
+
+if (orderBroadcast) {
+  orderBroadcast.onmessage = (event) => {
+    if (event.data?.type === 'ORDER_SYNC') {
+      window.dispatchEvent(new CustomEvent('expart_order_changed'));
+    }
+  };
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === STORAGE_KEY) {
+      window.dispatchEvent(new CustomEvent('expart_order_changed'));
+    }
+  });
+}
+
+export const syncOrdersWithBackend = async (): Promise<OrderRecord[]> => {
+  try {
+    const res = await fetch('/api/orders');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.orders)) {
+        const local = getOrders();
+        const map = new Map<string, OrderRecord>();
+        // Add backend orders
+        data.orders.forEach((o: OrderRecord) => map.set(o.id, o));
+        // Add local orders not yet on backend
+        local.forEach((o: OrderRecord) => {
+          if (!map.has(o.id)) {
+            map.set(o.id, o);
+            fetch('/api/orders', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(o)
+            }).catch(() => {});
+          }
+        });
+        const merged = Array.from(map.values());
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+        window.dispatchEvent(new CustomEvent('expart_order_changed'));
+        return merged;
+      }
+    }
+  } catch (err) {
+    // offline or static fallback
+  }
+  return getOrders();
+};
 
 const INITIAL_FAQS: FaqItem[] = [
   {
@@ -74,10 +156,15 @@ export const getOrders = (): OrderRecord[] => {
       return INITIAL_ORDERS;
     }
     const parsed: OrderRecord[] = JSON.parse(data);
-    // Filter out old legacy mock test orders so list starts genuinely from 0 real orders
+    // Filter out old legacy mock test orders
     const cleaned = parsed.filter(
       (o) => !['EXP-9142', 'EXP-8820', 'EXP-7519'].includes(o.id)
     );
+    // If cleaned is empty, restore with INITIAL_ORDERS (including Mizan's order)
+    if (cleaned.length === 0 && INITIAL_ORDERS.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_ORDERS));
+      return INITIAL_ORDERS;
+    }
     if (cleaned.length !== parsed.length) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
     }
@@ -91,9 +178,20 @@ export const getOrders = (): OrderRecord[] => {
 export const saveOrder = (order: OrderRecord): void => {
   try {
     const current = getOrders();
-    const updated = [order, ...current];
+    const exists = current.some((o) => o.id === order.id);
+    const updated = exists ? current.map((o) => (o.id === order.id ? order : o)) : [order, ...current];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('expart_order_changed'));
+    orderBroadcast?.postMessage({ type: 'ORDER_SYNC' });
+
+    // Send to backend
+    fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(order),
+    }).catch((err) => {
+      console.warn('Backend order sync warning:', err);
+    });
   } catch (e) {
     console.error('Error saving order', e);
   }
@@ -118,6 +216,13 @@ export const updateOrderStatus = (
     });
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('expart_order_changed'));
+    orderBroadcast?.postMessage({ type: 'ORDER_SYNC' });
+
+    fetch(`/api/orders/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus, adminNote }),
+    }).catch(() => {});
   } catch (e) {
     console.error('Error updating order', e);
   }
@@ -140,6 +245,13 @@ export const updateOrderLocation = (
     });
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('expart_order_changed'));
+    orderBroadcast?.postMessage({ type: 'ORDER_SYNC' });
+
+    fetch(`/api/orders/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientLocation: location }),
+    }).catch(() => {});
   } catch (e) {
     console.error('Error updating order location', e);
   }
@@ -151,6 +263,11 @@ export const deleteOrder = (id: string): void => {
     const updated = current.filter((ord) => ord.id !== id);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('expart_order_changed'));
+    orderBroadcast?.postMessage({ type: 'ORDER_SYNC' });
+
+    fetch(`/api/orders/${id}`, {
+      method: 'DELETE',
+    }).catch(() => {});
   } catch (e) {
     console.error('Error deleting order', e);
   }

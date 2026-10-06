@@ -41,6 +41,7 @@ import { OrderRecord, OrderStatus, AdminSettings, PaymentMethod, FaqItem, Packag
 import { ExpartBDLogo } from './ExpartBDLogo';
 import { 
   getOrders, 
+  syncOrdersWithBackend,
   updateOrderStatus, 
   deleteOrder, 
   saveOrder, 
@@ -149,11 +150,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
 
   useEffect(() => {
     loadData();
+    syncOrdersWithBackend().then((latest) => {
+      if (Array.isArray(latest)) setOrders(latest);
+    });
+
     const handleOrderChange = () => loadData();
     const handleSettingsChange = () => loadData();
     const handleFaqsChange = () => loadData();
     const handleFeaturesChange = () => loadData();
     const handleChatChange = () => setChatSessions(getChatSessions());
+
+    // Auto-polling every 2.5 seconds for instant real-time synchronization across devices & tabs
+    const pollInterval = setInterval(() => {
+      syncOrdersWithBackend().then((latest) => {
+        if (Array.isArray(latest)) setOrders(latest);
+      });
+    }, 2500);
 
     window.addEventListener('expart_order_changed', handleOrderChange);
     window.addEventListener('expart_settings_changed', handleSettingsChange);
@@ -161,6 +173,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
     window.addEventListener('expart_features_changed', handleFeaturesChange);
     window.addEventListener('expart_chat_changed', handleChatChange);
     return () => {
+      clearInterval(pollInterval);
       window.removeEventListener('expart_order_changed', handleOrderChange);
       window.removeEventListener('expart_settings_changed', handleSettingsChange);
       window.removeEventListener('expart_faqs_changed', handleFaqsChange);
