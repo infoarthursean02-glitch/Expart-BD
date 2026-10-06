@@ -624,5 +624,6 @@ export const OrderForm: React.FC<OrderFormProps> = () => {
           </div>
         </div>
       )}
+    </section>
   );
 };
