@@ -15,7 +15,8 @@ import {
   ExternalLink,
   CreditCard,
   CheckCircle2,
-  Paperclip
+  Paperclip,
+  Headphones
 } from 'lucide-react';
 import { ExpartBDLogo } from './ExpartBDLogo';
 import { ChatSession, ClientLocationData } from '../types';
@@ -192,12 +193,12 @@ export const LiveChatWidget: React.FC = () => {
               <div>
                 <div className="flex items-center gap-1.5">
                   <h3 className="font-bold text-sm leading-tight text-white">
-                    Expart BD লাইভ চ্যাট
+                    Expart BD লাইভ সাপোর্ট টিম
                   </h3>
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 </div>
-                <p className="text-[11px] text-white/80">
-                  অটোমেটিক এআই রিপ্লাই · ২৪/৭ সক্রিয়
+                <p className="text-[11px] text-white/90 font-medium">
+                  আমাদের প্রতিনিধি একটিভ আছেন · আপনি সাজেস্টেড প্রশ্ন করুন
                 </p>
               </div>
             </div>
@@ -215,7 +216,7 @@ export const LiveChatWidget: React.FC = () => {
                 title="সকল প্রশ্ন তালিকা দেখুন"
               >
                 <HelpCircle className="w-4 h-4" />
-                <span className="hidden sm:inline">প্রশ্ন তালিকা</span>
+                <span className="hidden sm:inline">সাজেস্টেড প্রশ্ন</span>
               </button>
 
               <button
@@ -235,8 +236,8 @@ export const LiveChatWidget: React.FC = () => {
               <div className="p-3 bg-white border-b border-slate-200 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
-                    <HelpCircle className="w-4 h-4 text-orange-600" />
-                    <span>যেকোনো প্রশ্নে ক্লিক করলে অটোমেটিক উত্তর যাবে:</span>
+                    <Headphones className="w-4 h-4 text-emerald-600" />
+                    <span>আমাদের প্রতিনিধি একটিভ আছেন, আপনি সাজেস্টেড প্রশ্ন করুন:</span>
                   </div>
                   <button
                     type="button"
@@ -335,11 +336,11 @@ export const LiveChatWidget: React.FC = () => {
                   >
                     <div className="flex items-end gap-1.5 max-w-[90%]">
                       {!isClient && (
-                        <div className="w-6 h-6 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center shrink-0 mb-0.5">
+                        <div className="w-6 h-6 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center shrink-0 mb-0.5">
                           {isAdmin ? (
                             <ShieldCheck className="w-3.5 h-3.5 text-orange-600" />
                           ) : (
-                            <Bot className="w-3.5 h-3.5 text-orange-600" />
+                            <Headphones className="w-3.5 h-3.5 text-emerald-600" />
                           )}
                         </div>
                       )}
@@ -359,9 +360,9 @@ export const LiveChatWidget: React.FC = () => {
                           </div>
                         )}
                         {!isClient && !isAdmin && (
-                          <div className="text-[10px] font-bold text-orange-600 mb-1 flex items-center gap-1">
-                            <Sparkles className="w-3 h-3" />
-                            <span>অটোমেটিক উত্তর</span>
+                          <div className="text-[10px] font-bold text-emerald-700 mb-1 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <span>লাইভ সাপোর্ট টিম (Live Support Team)</span>
                           </div>
                         )}
 
@@ -436,8 +437,8 @@ export const LiveChatWidget: React.FC = () => {
               {/* Typing Indicator */}
               {isTyping && (
                 <div className="flex items-center gap-2 text-xs text-slate-500 bg-white px-3 py-2 rounded-xl border border-slate-200 w-fit animate-pulse">
-                  <Bot className="w-3.5 h-3.5 text-orange-600" />
-                  <span>Expart BD অ্যাসিস্ট্যান্ট উত্তর তৈরি করছে...</span>
+                  <Headphones className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>লাইভ সাপোর্ট টিম উত্তর লিখছে...</span>
                 </div>
               )}
 
@@ -453,8 +454,8 @@ export const LiveChatWidget: React.FC = () => {
                 onClick={() => setShowQaDrawer(true)}
                 className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-orange-700 hover:text-orange-800 transition-colors cursor-pointer w-full py-0.5"
               >
-                <HelpCircle className="w-3.5 h-3.5 text-orange-600" />
-                <span>৫০টি সাধারণ প্রশ্ন ও সমাধান দেখুন</span>
+                <Headphones className="w-3.5 h-3.5 text-emerald-600" />
+                <span>আমাদের প্রতিনিধি একটিভ আছেন · সাজেস্টেড প্রশ্ন করুন</span>
               </button>
             </div>
           )}

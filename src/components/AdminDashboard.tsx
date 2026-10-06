@@ -1652,7 +1652,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                                 className={`flex flex-col ${isClient ? 'items-start' : 'items-end'}`}
                               >
                                 <div className="text-[10px] text-slate-400 mb-1 px-1 font-mono">
-                                  {isClient ? 'গ্রাহকের প্রশ্ন' : isAdmin ? '👨‍💼 অ্যাডমিন উত্তর' : '🤖 অটোমেটিক এআই উত্তর'} · {m.timestamp}
+                                  {isClient ? 'গ্রাহকের প্রশ্ন' : isAdmin ? '👨‍💼 অ্যাডমিন উত্তর' : '🎧 লাইভ সাপোর্ট টিম'} · {m.timestamp}
                                 </div>
                                 <div
                                   className={`max-w-[85%] px-4 py-3 rounded-2xl text-xs sm:text-sm leading-relaxed whitespace-pre-line shadow-xs ${
