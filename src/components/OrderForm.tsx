@@ -44,7 +44,7 @@ export const OrderForm: React.FC<OrderFormProps> = () => {
     return () => window.removeEventListener('expart_settings_changed', handleSettings);
   }, []);
 
-  const officialNumber = settings.paymentNumber || '01601300122';
+  const officialNumber = settings.paymentNumber || '+8801908769186';
 
   const handleCopyOfficialNumber = () => {
     navigator.clipboard.writeText(officialNumber);
@@ -194,7 +194,7 @@ export const OrderForm: React.FC<OrderFormProps> = () => {
                       {paymentMethod === 'bKash' ? 'বিকাশ' : 'নগদ'} পার্সোনাল নম্বর (Send Money):
                     </div>
                     <div className="text-xl sm:text-2xl font-black font-mono tracking-wider text-slate-900">
-                      +88{officialNumber}
+                      {officialNumber.startsWith('+88') ? officialNumber : `+88${officialNumber}`}
                     </div>
                     <div className="text-xs text-slate-500">
                       প্যাকেজ ফি: <strong className="text-orange-600">৳{settings.packagePrice || 2999} টাকা</strong>

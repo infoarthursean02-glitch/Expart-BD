@@ -45,20 +45,20 @@ export const ExpartBDLogo: React.FC<ExpartBDLogoProps> = ({
         </linearGradient>
 
         <linearGradient id="logo-arrow-green-comp" x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#059669" />
-          <stop offset="50%" stopColor="#00c853" />
-          <stop offset="100%" stopColor="#00e676" />
+          <stop offset="0%" stopColor="#c69214" />
+          <stop offset="50%" stopColor="#ffd700" />
+          <stop offset="100%" stopColor="#fff3a8" />
         </linearGradient>
 
         <linearGradient id="logo-coin-green-comp" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#00e676" />
-          <stop offset="50%" stopColor="#00c853" />
-          <stop offset="100%" stopColor="#008c3a" />
+          <stop offset="0%" stopColor="#fff3a8" />
+          <stop offset="50%" stopColor="#ffd700" />
+          <stop offset="100%" stopColor="#aa771c" />
         </linearGradient>
 
         <linearGradient id="logo-coin-rim-comp" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#e2fbeb" />
-          <stop offset="100%" stopColor="#00a854" />
+          <stop offset="0%" stopColor="#fffbeb" />
+          <stop offset="100%" stopColor="#d97706" />
         </linearGradient>
 
         <linearGradient id="logo-play-blue-comp" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -103,21 +103,21 @@ export const ExpartBDLogo: React.FC<ExpartBDLogoProps> = ({
           fill="url(#logo-play-blue-comp)" 
         />
 
-        {/* Green Rising Growth Arrow */}
+        {/* Gold Rising Growth Arrow */}
         <path 
           d="M 72 205 C 105 185, 140 155, 182 118 L 192 128 L 222 82 L 165 92 L 175 102 C 135 138, 100 168, 68 188 Z" 
           fill="url(#logo-arrow-green-comp)" 
         />
 
         {/* Monetization Coins Stack */}
-        <ellipse cx="188" cy="222" rx="22" ry="7" fill="#008040" />
-        <path d="M 166 222 L 166 226 C 166 230, 210 230, 210 226 L 210 222 Z" fill="#006030" />
+        <ellipse cx="188" cy="222" rx="22" ry="7" fill="#b45309" />
+        <path d="M 166 222 L 166 226 C 166 230, 210 230, 210 226 L 210 222 Z" fill="#92400e" />
         
-        <ellipse cx="188" cy="214" rx="22" ry="7" fill="#00a854" />
-        <path d="M 166 214 L 166 218 C 166 222, 210 222, 210 218 L 210 214 Z" fill="#007a3d" />
+        <ellipse cx="188" cy="214" rx="22" ry="7" fill="#d97706" />
+        <path d="M 166 214 L 166 218 C 166 222, 210 222, 210 218 L 210 214 Z" fill="#b45309" />
 
         <ellipse cx="188" cy="206" rx="22" ry="7" fill="url(#logo-coin-rim-comp)" />
-        <ellipse cx="188" cy="205" rx="20" ry="6" fill="#00c853" />
+        <ellipse cx="188" cy="205" rx="20" ry="6" fill="#f59e0b" />
 
         {/* Front Dollar Coin */}
         <circle cx="212" cy="216" r="24" fill="url(#logo-coin-green-comp)" stroke="#ffffff" strokeWidth="2.5" />
@@ -127,7 +127,7 @@ export const ExpartBDLogo: React.FC<ExpartBDLogoProps> = ({
           fontFamily="system-ui, -apple-system, sans-serif" 
           fontSize="24" 
           fontWeight="900" 
-          fill="#ffffff" 
+          fill="#78350f" 
           textAnchor="middle"
         >
           $
@@ -145,20 +145,35 @@ export const ExpartBDLogo: React.FC<ExpartBDLogoProps> = ({
       {IconEmblem}
       <div className="flex flex-col text-left">
         <div className="flex items-baseline leading-none font-heading tracking-tight gap-1.5">
-          <span className={`text-xl sm:text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-[#0a192f]'}`}>
+          <span 
+            className={`text-xl sm:text-2xl font-black tracking-tight ${
+              isDark 
+                ? 'text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-300 drop-shadow-xs' 
+                : 'text-transparent bg-clip-text bg-gradient-to-r from-slate-950 via-slate-900 to-slate-800'
+            }`}
+          >
             Expart
           </span>
-          <span className="text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#00b050] via-[#00c853] to-[#10b981] drop-shadow-xs">
+          <span className="text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-br from-[#c69214] via-[#ffd700] via-[#fff4b8] to-[#b38728] drop-shadow-[0_1.5px_2px_rgba(180,135,40,0.35)] flex items-center">
             BD
+            <span className="text-[10px] ml-0.5 text-[#ffd700] drop-shadow-[0_0_4px_rgba(255,215,0,0.8)] leading-none select-none">✦</span>
           </span>
         </div>
-        <span 
-          className={`text-[10px] sm:text-[11px] font-semibold tracking-wider mt-0.5 ${
-            isDark ? 'text-slate-300' : 'text-[#0e2752]'
-          }`}
-        >
-          {subtext || 'Facebook Monetization Service'}
-        </span>
+
+        <div className="flex items-center gap-1.5 mt-0.5">
+          <span 
+            className={`text-[9px] sm:text-[10px] font-black tracking-[0.22em] uppercase ${
+              isDark 
+                ? 'text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400' 
+                : 'text-transparent bg-clip-text bg-gradient-to-r from-amber-800 via-amber-700 to-amber-900'
+            }`}
+          >
+            {subtext || 'Facebook Monetization Service'}
+          </span>
+        </div>
+
+        {/* Luxury Gold Hairline Accent */}
+        <div className="h-[1.5px] w-full bg-gradient-to-r from-amber-500/0 via-amber-400/70 to-amber-500/0 mt-0.5 rounded-full" />
       </div>
     </div>
   );

@@ -8,7 +8,6 @@ import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { EligibilityChecker } from './components/EligibilityChecker';
 import { PricingPackage } from './components/PricingPackage';
-import { HowItWorks } from './components/HowItWorks';
 import { TargetAudience } from './components/TargetAudience';
 import { TrustNotice } from './components/TrustNotice';
 import { FaqSection } from './components/FaqSection';
@@ -123,9 +122,6 @@ export default function App() {
 
         {/* Section 4: Special Package */}
         <PricingPackage onOrderClick={scrollToOrder} />
-
-        {/* Section 5: How It Works */}
-        <HowItWorks onOrderClick={scrollToOrder} />
 
         {/* Section 6: Who Is This For? */}
         <TargetAudience />

@@ -34,7 +34,8 @@ import {
   MessageSquare,
   MapPin,
   Send,
-  Globe
+  Globe,
+  Camera
 } from 'lucide-react';
 import { OrderRecord, OrderStatus, AdminSettings, PaymentMethod, FaqItem, PackageFeatureItem, ChatSession } from '../types';
 import { ExpartBDLogo } from './ExpartBDLogo';
@@ -94,6 +95,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [adminReplyInput, setAdminReplyInput] = useState('');
+  const [previewScreenshotUrl, setPreviewScreenshotUrl] = useState<string | null>(null);
 
   // Invoice / Receipt Modal
   const [selectedReceiptOrder, setSelectedReceiptOrder] = useState<OrderRecord | null>(null);
@@ -485,7 +487,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
               </span>
             </div>
             <p className="text-[11px] text-slate-500 hidden sm:block">
-              অফিশিয়াল পেমেন্ট নম্বর: <strong className="text-slate-900 font-mono">{settings.paymentNumber}</strong> · প্যাকেজ ফি: <strong>৳{settings.packagePrice}</strong>
+              অফিশিয়াল পেমেন্ট নম্বর (বিকাশ ও নগদ পার্সোনাল): <strong className="text-slate-900 font-mono">{settings.paymentNumber}</strong> · প্যাকেজ ফি: <strong>৳{settings.packagePrice}</strong>
             </p>
           </div>
         </div>
@@ -896,10 +898,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                   </div>
 
                   <div className="p-3.5 rounded-2xl bg-orange-50/50 border border-orange-200 space-y-1 text-xs">
-                    <div className="text-[10px] text-slate-500 uppercase font-mono">পেমেন্ট রিসিভার নম্বর</div>
-                    <div className="font-mono text-base font-bold text-slate-900">+88{settings.paymentNumber}</div>
+                    <div className="text-[10px] text-slate-500 uppercase font-mono">পেমেন্ট রিসিভার নম্বর (বিকাশ ও নগদ পার্সোনাল)</div>
+                    <div className="font-mono text-base font-bold text-slate-900">
+                      {settings.paymentNumber.startsWith('+88') ? settings.paymentNumber : `+88${settings.paymentNumber}`}
+                    </div>
                     <p className="text-[11px] text-slate-600">
-                      গ্রাহকরা বিকাশ ও নগদে এই নম্বরে Send Money করছেন।
+                      গ্রাহকরা বিকাশ ও নগদে এই পার্সোনাল নম্বরে Send Money করছেন।
                     </p>
                   </div>
                 </div>
@@ -1660,6 +1664,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                                   }`}
                                 >
                                   {m.text}
+
+                                  {/* Client Uploaded Screenshot Card in Admin Chat */}
+                                  {m.attachmentUrl && (
+                                    <div className="mt-2.5 rounded-xl overflow-hidden border border-slate-200 bg-white p-1.5 max-w-[280px] shadow-sm text-slate-800">
+                                      <img
+                                        src={m.attachmentUrl}
+                                        alt="Client uploaded screenshot"
+                                        className="w-full max-h-44 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                        onClick={() => setPreviewScreenshotUrl(m.attachmentUrl || null)}
+                                      />
+                                      <div className="p-1.5 flex items-center justify-between text-[11px]">
+                                        <span className="font-semibold text-slate-700 flex items-center gap-1">
+                                          <Camera className="w-3.5 h-3.5 text-orange-600" />
+                                          <span>স্ক্রিনশট সংযুক্ত</span>
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() => setPreviewScreenshotUrl(m.attachmentUrl || null)}
+                                          className="text-orange-600 font-bold hover:underline cursor-pointer"
+                                        >
+                                          বড় করে দেখুন ↗
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             );
@@ -1894,14 +1923,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
 
                   <div className="space-y-1.5">
                     <label className="font-bold text-slate-700 block">
-                      অফিশিয়াল বিকাশ ও নগদ নম্বর (Send Money) <span className="text-rose-500">*</span>
+                      অফিশিয়াল বিকাশ ও নগদ নম্বর (পার্সোনাল - Send Money) <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
                       required
                       value={settingsForm.paymentNumber}
                       onChange={(e) => setSettingsForm({ ...settingsForm, paymentNumber: e.target.value })}
-                      placeholder="01601300122"
+                      placeholder="+8801908769186"
                       className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono font-bold text-base focus:outline-none focus:border-orange-500 shadow-2xs"
                     />
                     <p className="text-[11px] text-slate-500">
@@ -2443,6 +2472,57 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox for Admin viewing client screenshot */}
+      {previewScreenshotUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fadeIn"
+          onClick={() => setPreviewScreenshotUrl(null)}
+        >
+          <div
+            className="relative max-w-3xl max-h-[90vh] bg-white rounded-3xl overflow-hidden p-4 shadow-2xl flex flex-col space-y-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <span className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                <Camera className="w-4 h-4 text-orange-600" />
+                <span>গ্রাহকের আপলোডকৃত স্ক্রিনশট</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setPreviewScreenshotUrl(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="overflow-auto max-h-[75vh] flex items-center justify-center bg-slate-50 rounded-2xl p-2">
+              <img
+                src={previewScreenshotUrl}
+                alt="Full screenshot"
+                className="max-w-full max-h-[70vh] object-contain rounded-xl"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <a
+                href={previewScreenshotUrl}
+                download="client_dashboard_screenshot.png"
+                className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>ডাউনলোড করুন</span>
+              </a>
+              <button
+                type="button"
+                onClick={() => setPreviewScreenshotUrl(null)}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+              >
+                বন্ধ
+              </button>
+            </div>
           </div>
         </div>
       )}

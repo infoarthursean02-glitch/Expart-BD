@@ -6,7 +6,7 @@ const FAQS_KEY = 'expart_bd_faqs_v1';
 const FEATURES_KEY = 'expart_bd_features_v1';
 
 const DEFAULT_SETTINGS: AdminSettings = {
-  paymentNumber: '01601300122',
+  paymentNumber: '+8801908769186',
   packagePrice: 2999,
   businessName: 'Expart BD',
   adminUsername: 'eXPART bd',
@@ -35,7 +35,7 @@ const INITIAL_FAQS: FaqItem[] = [
     id: 'faq-3',
     question: 'সার্ভিস ফি কত এবং কীভাবে পেমেন্ট করব? (How much does the service cost?)',
     answer:
-      'আমাদের সম্পূর্ণ ফেসবুক মনিটাইজেশন প্যাকেজের মূল্য এককালীন মাত্র ৳২,৯৯৯ টাকা। আপনি আমাদের অফিশিয়াল বিকাশ অথবা নগদ নম্বরে (০১৬০১-৩০০১২২) Send Money করে প্রাপ্ত Transaction ID (TrxID) দিয়ে অর্ডার কনফার্ম করতে পারবেন। কোনো লুকানো চার্জ নেই।',
+      'আমাদের সম্পূর্ণ ফেসবুক মনিটাইজেশন প্যাকেজের মূল্য এককালীন মাত্র ৳২,৯৯৯ টাকা। আপনি আমাদের অফিশিয়াল বিকাশ অথবা নগদ পার্সোনাল নম্বরে (+8801908769186) Send Money করে প্রাপ্ত Transaction ID (TrxID) দিয়ে অর্ডার কনফার্ম করতে পারবেন। কোনো লুকানো চার্জ নেই।',
   },
   {
     id: 'faq-4',
@@ -142,6 +142,10 @@ export const getSettings = (): AdminSettings => {
       return DEFAULT_SETTINGS;
     }
     const parsed = JSON.parse(data);
+    if (parsed.paymentNumber === '01601300122' || !parsed.paymentNumber) {
+      parsed.paymentNumber = '+8801908769186';
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...DEFAULT_SETTINGS, ...parsed }));
+    }
     return { ...DEFAULT_SETTINGS, ...parsed };
   } catch (e) {
     return DEFAULT_SETTINGS;

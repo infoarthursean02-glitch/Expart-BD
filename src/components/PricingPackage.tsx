@@ -97,9 +97,10 @@ export const PricingPackage: React.FC<PricingPackageProps> = ({ onOrderClick }) 
                 <div className="flex items-center gap-1.5 text-xs font-bold justify-end">
                   <span className="px-2 py-0.5 rounded-lg bg-pink-100 text-pink-700 border border-pink-200">বিকাশ</span>
                   <span className="px-2 py-0.5 rounded-lg bg-orange-100 text-orange-700 border border-orange-200">নগদ</span>
+                  <span className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 text-[10px]">পার্সোনাল</span>
                 </div>
-                <div className="text-[11px] font-mono text-slate-900 font-bold mt-1">
-                  01601300122
+                <div className="text-xs font-mono text-slate-900 font-bold mt-1">
+                  +8801908769186
                 </div>
               </div>
             </div>

@@ -66,6 +66,9 @@ export interface ChatMessage {
   sender: 'client' | 'bot' | 'admin';
   text: string;
   timestamp: string;
+  actionType?: 'upload_screenshot' | 'send_page_link' | 'order_package';
+  attachmentUrl?: string;
+  attachmentName?: string;
 }
 
 export interface ChatSession {

@@ -52,7 +52,7 @@ export const getOrCreateCurrentSession = (location?: ClientLocationData): ChatSe
         {
           id: `msg-${Date.now()}-welcome`,
           sender: 'bot',
-          text: 'আসসালামু আলাইকুম! Expart BD-তে স্বাগতম। ফেসবুক কনটেন্ট মনিটাইজেশন সার্ভিস সম্পর্কে আপনার যেকোনো প্রশ্ন লিখুন, আমি এখনই আপনাকে উত্তর দিচ্ছি!',
+          text: 'আসসালামু আলাইকুম! Expart BD লাইভ সাপোর্টে স্বাগতম। ফেসবুক কনটেন্ট মনিটাইজেশন সম্পর্কে আপনার যেকোনো প্রশ্ন লিখুন অথবা প্রশ্ন তালিকা (❓ আইকন) থেকে সিলেক্ট করুন—আমি সঙ্গে সঙ্গে বিস্তারিত উত্তর দিচ্ছি!',
           timestamp: now,
         },
       ],
@@ -64,7 +64,9 @@ export const getOrCreateCurrentSession = (location?: ClientLocationData): ChatSe
 
 export const sendClientMessage = async (
   text: string,
-  location?: ClientLocationData
+  location?: ClientLocationData,
+  attachmentUrl?: string,
+  attachmentName?: string
 ): Promise<ChatSession> => {
   const sessionId = getCurrentSessionId();
   const sessions = getChatSessions();
@@ -90,8 +92,10 @@ export const sendClientMessage = async (
   const userMsg: ChatMessage = {
     id: `msg-${Date.now()}-client`,
     sender: 'client',
-    text: text.trim(),
+    text: text.trim() || (attachmentUrl ? '📸 স্ক্রিনশট আপলোড করেছি' : ''),
     timestamp: now,
+    attachmentUrl,
+    attachmentName,
   };
   session.messages.push(userMsg);
   session.updatedAt = now;
@@ -102,16 +106,27 @@ export const sendClientMessage = async (
 
   saveChatSessions([...sessions]);
 
-  // Generate automatic reply from AI
-  const autoReplyText = await generateAutoReply(text);
-
   // Short realistic delay for typing feel
-  await new Promise((res) => setTimeout(res, 600));
+  await new Promise((res) => setTimeout(res, 500));
+
+  let botReplyText = '';
+  let botActionType: 'upload_screenshot' | 'send_page_link' | 'order_package' | undefined;
+
+  if (attachmentUrl) {
+    botReplyText =
+      'ধন্যবাদ! আপনার পাঠানো স্ক্রিনশটটি সফলভাবে রিসিভ হয়েছে। আমাদের টিম স্ক্রিনশটটি দেখে আপনার পেজের অবস্থা ও পলিসি স্ট্যাটাস যাচাই করছে। আপনার পেজ/প্রোফাইল লিংক দেওয়া না থাকলে নিচে লিংকটি দিতে পারেন।';
+    botActionType = 'send_page_link';
+  } else {
+    const result = await generateAutoReply(text);
+    botReplyText = result.text;
+    botActionType = result.actionType;
+  }
 
   const botMsg: ChatMessage = {
     id: `msg-${Date.now()}-bot`,
     sender: 'bot',
-    text: autoReplyText,
+    text: botReplyText,
+    actionType: botActionType,
     timestamp: new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' }),
   };
 

@@ -13,7 +13,7 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({ onOrderClick }) => {
       title: 'Place Your Order',
       bnTitle: 'অর্ডার ও TrxID প্রদান করুন',
       quote: 'Click Order Now and send your details.',
-      description: 'বিকাশ বা নগদ নম্বরে (০১৬০১-৩০০১২২) ফি পাঠিয়ে TrxID সহ অর্ডার ফর্মটি সাবমিট করুন।',
+      description: 'বিকাশ বা নগদ পার্সোনাল নম্বরে (+8801908769186) ফি পাঠিয়ে TrxID সহ অর্ডার ফর্মটি সাবমিট করুন।',
       icon: Send,
     },
     {
