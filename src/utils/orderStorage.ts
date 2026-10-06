@@ -1,4 +1,4 @@
-import { OrderRecord, OrderStatus, AdminSettings, FaqItem, PackageFeatureItem } from '../types';
+import { OrderRecord, OrderStatus, AdminSettings, FaqItem, PackageFeatureItem, ClientLocationData } from '../types';
 
 const STORAGE_KEY = 'expart_bd_orders_v1';
 const SETTINGS_KEY = 'expart_bd_settings_v1';
@@ -120,6 +120,28 @@ export const updateOrderStatus = (
     window.dispatchEvent(new CustomEvent('expart_order_changed'));
   } catch (e) {
     console.error('Error updating order', e);
+  }
+};
+
+export const updateOrderLocation = (
+  id: string,
+  location: ClientLocationData
+): void => {
+  try {
+    const current = getOrders();
+    const updated = current.map((ord) => {
+      if (ord.id === id) {
+        return {
+          ...ord,
+          clientLocation: location,
+        };
+      }
+      return ord;
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('expart_order_changed'));
+  } catch (e) {
+    console.error('Error updating order location', e);
   }
 };
 
