@@ -15,6 +15,7 @@ if (!fs.existsSync(DATA_DIR)) {
 }
 
 const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
+const DELETED_ORDERS_FILE = path.join(DATA_DIR, 'deleted_orders.json');
 const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
 const CHATS_FILE = path.join(DATA_DIR, 'chats.json');
 const FEATURES_FILE = path.join(DATA_DIR, 'features.json');
@@ -99,8 +100,10 @@ if (!fs.existsSync(SETTINGS_FILE)) {
 
 // API Routes
 app.get('/api/orders', (_req: Request, res: Response) => {
-  const orders = readJsonFile(ORDERS_FILE, INITIAL_ORDERS);
-  res.json({ success: true, orders });
+  const orders: any[] = readJsonFile(ORDERS_FILE, []);
+  const deleted: string[] = readJsonFile(DELETED_ORDERS_FILE, []);
+  const filtered = orders.filter((o) => !deleted.includes(o.id));
+  res.json({ success: true, orders: filtered });
 });
 
 app.post('/api/orders', (req: Request, res: Response) => {
@@ -110,7 +113,14 @@ app.post('/api/orders', (req: Request, res: Response) => {
     return;
   }
 
-  const currentOrders: any[] = readJsonFile(ORDERS_FILE, INITIAL_ORDERS);
+  // Remove from deleted list if re-added
+  const deleted: string[] = readJsonFile(DELETED_ORDERS_FILE, []);
+  if (deleted.includes(newOrder.id)) {
+    const updatedDeleted = deleted.filter((d) => d !== newOrder.id);
+    writeJsonFile(DELETED_ORDERS_FILE, updatedDeleted);
+  }
+
+  const currentOrders: any[] = readJsonFile(ORDERS_FILE, []);
   const exists = currentOrders.some((o) => o.id === newOrder.id);
   const updated = exists
     ? currentOrders.map((o) => (o.id === newOrder.id ? { ...o, ...newOrder } : o))
@@ -123,7 +133,7 @@ app.post('/api/orders', (req: Request, res: Response) => {
 app.patch('/api/orders/:id', (req: Request, res: Response) => {
   const { id } = req.params;
   const updates = req.body;
-  const currentOrders: any[] = readJsonFile(ORDERS_FILE, INITIAL_ORDERS);
+  const currentOrders: any[] = readJsonFile(ORDERS_FILE, []);
   const updated = currentOrders.map((o) => (o.id === id ? { ...o, ...updates } : o));
   writeJsonFile(ORDERS_FILE, updated);
   res.json({ success: true, orders: updated });
@@ -131,9 +141,16 @@ app.patch('/api/orders/:id', (req: Request, res: Response) => {
 
 app.delete('/api/orders/:id', (req: Request, res: Response) => {
   const { id } = req.params;
-  const currentOrders: any[] = readJsonFile(ORDERS_FILE, INITIAL_ORDERS);
+  const currentOrders: any[] = readJsonFile(ORDERS_FILE, []);
   const updated = currentOrders.filter((o) => o.id !== id);
   writeJsonFile(ORDERS_FILE, updated);
+
+  const deleted: string[] = readJsonFile(DELETED_ORDERS_FILE, []);
+  if (!deleted.includes(id)) {
+    deleted.push(id);
+    writeJsonFile(DELETED_ORDERS_FILE, deleted);
+  }
+
   res.json({ success: true, orders: updated });
 });
 

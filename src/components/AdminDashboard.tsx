@@ -42,7 +42,10 @@ import {
   Activity,
   Smartphone,
   Laptop,
-  ChevronRight
+  ChevronRight,
+  PlayCircle,
+  Phone,
+  ShieldAlert
 } from 'lucide-react';
 import { 
   OrderRecord, 
@@ -79,7 +82,7 @@ import {
   sendAdminReply, 
   markSessionAsReadByAdmin 
 } from '../utils/chatStorage';
-import { getVisitors, getActivities } from '../utils/activityTracker';
+import { getVisitors, getActivities, syncVisitorsWithBackend, syncActivitiesWithBackend } from '../utils/activityTracker';
 
 interface AdminDashboardProps {
   onBackToWeb: () => void;
@@ -198,22 +201,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
   };
 
   const loadData = () => {
-    setOrders(getOrders());
+    syncOrdersWithBackend().then((latest) => {
+      if (Array.isArray(latest)) setOrders(latest);
+    });
+    syncVisitorsWithBackend().then((latest) => {
+      if (Array.isArray(latest)) setVisitors(latest);
+    });
+    syncActivitiesWithBackend().then((latest) => {
+      if (Array.isArray(latest)) setActivities(latest);
+    });
     const currentSettings = getSettings();
     setSettingsState(currentSettings);
     setSettingsForm(currentSettings);
     setFaqsState(getFaqs());
     setFeaturesState(getPackageFeatures());
     setChatSessions(getChatSessions());
-    setVisitors(getVisitors());
-    setActivities(getActivities());
+  };
+
+  const handleApproveOrder = (id: string) => {
+    updateOrderStatus(id, 'verified', 'পেমেন্ট ও TrxID অনুমোদিত (Approved)');
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: 'verified', adminNote: 'পেমেন্ট ও TrxID অনুমোদিত (Approved)' } : o)));
+    showToast(`অর্ডার ${id} সফলভাবে Approved (অনুমোদিত) হয়েছে!`);
+  };
+
+  const handleAcceptOrder = (id: string) => {
+    updateOrderStatus(id, 'in_progress', 'অর্ডার গৃহীত ও কাজ চলমান (Accepted)');
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: 'in_progress', adminNote: 'অর্ডার গৃহীত ও কাজ চলমান (Accepted)' } : o)));
+    showToast(`অর্ডার ${id} সফলভাবে Accept করে প্রসেসিংয়ে নেওয়া হয়েছে!`);
+  };
+
+  const handleRejectOrder = (id: string) => {
+    updateOrderStatus(id, 'rejected', 'ভুল বা অমিল TrxID (Rejected)');
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: 'rejected', adminNote: 'ভুল বা অমিল TrxID (Rejected)' } : o)));
+    showToast(`অর্ডার ${id} বাতিল (Rejected) করা হয়েছে!`);
   };
 
   useEffect(() => {
     loadData();
-    syncOrdersWithBackend().then((latest) => {
-      if (Array.isArray(latest)) setOrders(latest);
-    });
 
     const handleOrderChange = () => loadData();
     const handleSettingsChange = () => loadData();
@@ -223,14 +247,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
     const handleVisitorChange = () => setVisitors(getVisitors());
     const handleActivityChange = () => setActivities(getActivities());
 
-    // Auto-polling every 2.5 seconds for instant real-time synchronization across devices & tabs
+    // 3-second live auto-polling loop for all live data
     const pollInterval = setInterval(() => {
       syncOrdersWithBackend().then((latest) => {
         if (Array.isArray(latest)) setOrders(latest);
       });
-      setVisitors(getVisitors());
-      setActivities(getActivities());
-    }, 2500);
+      syncVisitorsWithBackend().then((latest) => {
+        if (Array.isArray(latest)) setVisitors(latest);
+      });
+      syncActivitiesWithBackend().then((latest) => {
+        if (Array.isArray(latest)) setActivities(latest);
+      });
+      fetch('/api/chats')
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.success && Array.isArray(d.chats)) setChatSessions(d.chats);
+        })
+        .catch(() => {});
+    }, 3000);
 
     window.addEventListener('expart_order_changed', handleOrderChange);
     window.addEventListener('expart_settings_changed', handleSettingsChange);
@@ -574,6 +608,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
               <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 রুট: /admin
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 text-[10px] font-bold hidden md:flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                <span>৩ সেকেন্ড লাইভ সিঙ্ক</span>
               </span>
             </div>
             <p className="text-[11px] text-slate-500 hidden sm:block">
@@ -1757,14 +1795,49 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
           {/* TAB 3: PENDING VERIFICATION QUEUE */}
           {activeTab === 'pending' && (
             <div className="space-y-6">
-              <div>
-                <h2 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
-                  <Clock className="w-6 h-6 text-amber-500 animate-spin" />
-                  <span>পেন্ডিং TrxID ভেরিফিকেশন কিউ</span>
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-500">
-                  গ্রাহকরা অর্ডার ফর্মে যে TrxID সাবমিট করেছেন তা বিকাশ/নগদ স্টেটমেন্টের সাথে মিলিয়ে দ্রুত অনুমোদন করুন
-                </p>
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
+                    <Clock className="w-6 h-6 text-amber-500 animate-spin" />
+                    <span>পেন্ডিং TrxID ভেরিফিকেশন ও অনুমোদন</span>
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-500">
+                    গ্রাহকের বিকাশ ও নগদ পেমেন্ট ডিটেইলস মিলিয়ে Approved অথবা Accept করুন
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+                    <span>অপেক্ষমাণ: {pendingOrders.length}টি অর্ডার</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Pending Quick Overview Counters */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                  <span className="text-[11px] text-slate-400 font-bold block">মোট পেন্ডিং TrxID</span>
+                  <span className="text-xl sm:text-2xl font-black text-amber-600 mt-0.5 block">{pendingOrders.length} টি</span>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                  <span className="text-[11px] text-slate-400 font-bold block">অপেক্ষমাণ পেমেন্ট</span>
+                  <span className="text-xl sm:text-2xl font-black text-emerald-600 mt-0.5 block">
+                    ৳{pendingOrders.reduce((acc, curr) => acc + (curr.amount || 2999), 0)}
+                  </span>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                  <span className="text-[11px] text-slate-400 font-bold block">বিকাশ পেমেন্ট</span>
+                  <span className="text-xl sm:text-2xl font-black text-pink-600 mt-0.5 block">
+                    {pendingOrders.filter((o) => o.paymentMethod === 'bKash').length} টি
+                  </span>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                  <span className="text-[11px] text-slate-400 font-bold block">নগদ পেমেন্ট</span>
+                  <span className="text-xl sm:text-2xl font-black text-orange-600 mt-0.5 block">
+                    {pendingOrders.filter((o) => o.paymentMethod === 'Nagad').length} টি
+                  </span>
+                </div>
               </div>
 
               {pendingOrders.length === 0 ? (
@@ -1774,82 +1847,209 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                   </div>
                   <h3 className="text-lg font-bold text-slate-900">সব পেমেন্ট ভেরিফাইড!</h3>
                   <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                    বর্তমানে কোনো আনভেরিফাইড TrxID পেন্ডিং নেই। নতুন গ্রাহক অর্ডার দিলে এখানে স্বয়ংক্রিয়ভাবে দেখাবে।
+                    বর্তমানে কোনো আনভেরিফাইড TrxID পেন্ডিং নেই। নতুন গ্রাহক অর্ডার দিলে ৩ সেকেন্ডের মধ্যে এখানে স্বয়ংক্রিয়ভাবে দেখাবে।
                   </p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {pendingOrders.map((order) => (
                     <div
                       key={order.id}
-                      className="p-6 rounded-3xl bg-white border-2 border-amber-300 shadow-md space-y-4"
+                      className="p-5 sm:p-6 rounded-3xl bg-white border-2 border-amber-300 shadow-md space-y-4 hover:border-amber-400 transition-all"
                     >
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <span className="px-2.5 py-1 rounded-lg bg-amber-500 text-white font-mono font-black text-xs">
+                      {/* Top Bar */}
+                      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                        <div className="flex items-center gap-2.5">
+                          <span className="px-3 py-1 rounded-xl bg-amber-500 text-white font-mono font-black text-xs shadow-xs">
                             {order.id}
                           </span>
                           <span className="font-bold text-slate-900 text-base">{order.fullName}</span>
-                          <span className="text-slate-500 text-xs">({order.createdAt})</span>
-                        </div>
-                        <span className="text-amber-800 font-bold text-xs bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
-                          ভেরিফিকেশনের অপেক্ষায়
-                        </span>
-                      </div>
-
-                      <div className="p-4 rounded-2xl bg-orange-50/50 border border-orange-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div>
-                          <span className="text-xs text-slate-500 block font-medium">
-                            {order.paymentMethod} Transaction ID (TrxID)
-                          </span>
-                          <div className="font-mono text-xl sm:text-2xl font-black text-slate-900 tracking-wider">
-                            {order.trxId}
-                          </div>
-                          <div className="text-xs text-slate-600 mt-0.5">
-                            প্রেরক নম্বর: <strong className="text-slate-900">{order.senderNumber}</strong> · পরিমাণ: <strong className="text-emerald-700 font-bold">৳{order.amount}</strong>
-                          </div>
+                          <span className="text-slate-400 text-xs font-mono">({order.createdAt})</span>
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleCopyTrx(order.trxId)}
-                            className="px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
-                          >
-                            <Copy className="w-4 h-4 text-slate-500" />
-                            <span>{copiedTrxId === order.trxId ? 'TrxID কপিকৃত!' : 'TrxID কপি করুন'}</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleStatusChange(order.id, 'verified')}
-                            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs shadow-md shadow-emerald-600/25 cursor-pointer flex items-center gap-1.5"
-                          >
-                            <Check className="w-4 h-4" />
-                            <span>পেমেন্ট নিশ্চিত ও ভেরিফাই</span>
-                          </button>
+                          <span className="text-amber-800 font-bold text-xs bg-amber-50 px-3 py-1 rounded-full border border-amber-200 flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                            <span>ভেরিফিকেশন অপেক্ষমাণ</span>
+                          </span>
                         </div>
                       </div>
 
+                      {/* Payment Details Box */}
+                      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-amber-50/60 to-orange-50/40 border border-amber-200/80 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
+                            <CreditCard className="w-4 h-4 text-orange-600" />
+                            <span>পেমেন্ট বিস্তারিত (Payment Details):</span>
+                          </span>
+                          <span className={`px-2.5 py-0.5 rounded-lg text-xs font-bold border ${
+                            order.paymentMethod === 'bKash'
+                              ? 'bg-pink-100 text-pink-700 border-pink-200'
+                              : 'bg-orange-100 text-orange-700 border-orange-200'
+                          }`}>
+                            {order.paymentMethod === 'bKash' ? 'বিকাশ (bKash Personal)' : 'নগদ (Nagad Personal)'}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                          {/* TrxID */}
+                          <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-1">
+                            <span className="text-[10px] text-slate-400 font-bold block uppercase">
+                              Transaction ID (TrxID)
+                            </span>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-mono text-base sm:text-lg font-black text-slate-900 tracking-wider">
+                                {order.trxId}
+                              </span>
+                              {order.extraTrxChars && (
+                                <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-mono text-[10px] font-bold border border-amber-200">
+                                  {order.extraTrxChars}
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleCopyTrx(order.trxId)}
+                                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                                title="TrxID কপি করুন"
+                              >
+                                {copiedTrxId === order.trxId ? (
+                                  <Check className="w-4 h-4 text-emerald-600" />
+                                ) : (
+                                  <Copy className="w-4 h-4" />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Sender Number */}
+                          <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-1">
+                            <span className="text-[10px] text-slate-400 font-bold block uppercase">
+                              প্রেরক নম্বর (Sender Number)
+                            </span>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-mono text-base font-bold text-slate-900">
+                                {order.senderNumber}
+                              </span>
+                              <a
+                                href={`tel:${order.senderNumber}`}
+                                className="p-1.5 rounded-lg hover:bg-slate-100 text-orange-600 hover:text-orange-700 transition-colors cursor-pointer"
+                                title="কল করুন"
+                              >
+                                <Phone className="w-4 h-4" />
+                              </a>
+                            </div>
+                          </div>
+
+                          {/* Amount & Receiving Number */}
+                          <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-1">
+                            <span className="text-[10px] text-slate-400 font-bold block uppercase">
+                              পরিমাণ ও রিসিভিং নম্বর
+                            </span>
+                            <div className="flex items-center justify-between">
+                              <span className="text-base font-black text-emerald-600">
+                                ৳{order.amount || 2999}
+                              </span>
+                              <span className="font-mono text-[11px] text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+                                {settings.paymentNumber || '+8801929027577'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Statement Guide Note */}
+                        <div className="text-[11px] text-amber-900/80 bg-amber-100/60 p-2.5 rounded-xl border border-amber-200/60 flex items-center gap-2">
+                          <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0" />
+                          <span>
+                            স্টেটমেন্ট ভেরিফিকেশন গাইড: বিকাশ/নগদ অ্যাপে প্রেরক নম্বর <strong>{order.senderNumber}</strong> এবং TrxID <strong>{order.trxId}</strong> মিলিয়ে নিশ্চিত হলে নিচের Approved বা Accept বাটনে চাপুন।
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Customer & Location Details */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                          <span className="text-slate-500 block">ফেসবুক পেজ:</span>
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                          <span className="text-slate-400 block text-[10px] font-bold uppercase">গ্রাহকের ফেসবুক পেজ:</span>
                           <a
                             href={order.pageUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-orange-600 font-bold hover:underline flex items-center gap-1 truncate mt-0.5"
+                            className="text-orange-600 font-bold hover:underline flex items-center gap-1.5 truncate mt-0.5"
                           >
                             <span className="truncate">{order.pageUrl}</span>
-                            <ExternalLink className="w-3 h-3 shrink-0" />
+                            <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                           </a>
+                          {order.notes && (
+                            <p className="text-slate-600 pt-1 border-t border-slate-200 mt-1">
+                              নোট: "{order.notes}"
+                            </p>
+                          )}
                         </div>
 
-                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                          <span className="text-slate-500 block">গ্রাহকের ফোন ও নোট:</span>
-                          <div className="text-slate-900 font-bold mt-0.5">
-                            {order.phoneNumber} {order.notes ? `— "${order.notes}"` : ''}
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                          <span className="text-slate-400 block text-[10px] font-bold uppercase">লোকেশন ও ডিভাইস:</span>
+                          <div className="text-slate-800 font-bold">
+                            {order.clientLocation?.city || 'ঢাকা'}, {order.clientLocation?.country || 'বাংলাদেশ'}
+                            <span className="text-slate-500 font-mono font-normal ml-2">IP: {order.clientLocation?.ip || '103.xxx'}</span>
                           </div>
+                          <div className="text-slate-500 text-[11px]">
+                            ডিভাইস: {order.clientLocation?.device || 'Mobile'} ({order.clientLocation?.os || 'Android'}) · ব্রাউজার: {order.clientLocation?.browser || 'Chrome'}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons: Approved and Accept সহ */}
+                      <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedOrderForDetails(order)}
+                            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                          >
+                            <FileText className="w-3.5 h-3.5 text-slate-500" />
+                            <span>পূর্ণ বিবরণী</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(order.id)}
+                            className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border border-rose-200"
+                            title="এই অর্ডারটি স্থায়ীভাবে মুছে ফেলুন"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                            <span>মুছে ফেলুন</span>
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-2.5">
+                          {/* Reject Button */}
+                          <button
+                            type="button"
+                            onClick={() => handleRejectOrder(order.id)}
+                            className="px-4 py-2.5 rounded-xl bg-white border border-rose-300 hover:bg-rose-50 text-rose-700 text-xs font-bold transition-all cursor-pointer shadow-xs flex items-center gap-1.5"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                            <span>বাতিল (Reject)</span>
+                          </button>
+
+                          {/* Accept Button */}
+                          <button
+                            type="button"
+                            onClick={() => handleAcceptOrder(order.id)}
+                            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-extrabold transition-all cursor-pointer shadow-md shadow-blue-600/20 active:scale-95 flex items-center gap-1.5"
+                          >
+                            <PlayCircle className="w-4 h-4" />
+                            <span>Accept (গ্রহণ ও কাজ শুরু)</span>
+                          </button>
+
+                          {/* Approved Button */}
+                          <button
+                            type="button"
+                            onClick={() => handleApproveOrder(order.id)}
+                            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-extrabold transition-all cursor-pointer shadow-md shadow-emerald-600/25 active:scale-95 flex items-center gap-1.5"
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>Approved (অনুমোদন করুন)</span>
+                          </button>
                         </div>
                       </div>
                     </div>

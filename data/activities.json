@@ -1,0 +1,62 @@
+[
+  {
+    "id": "ACT-1001",
+    "visitorId": "VIS-9412",
+    "category": "order",
+    "title": "অর্ডার সাবমিট করেছেন (bKash TrxID)",
+    "details": "গ্রাহক মিজান (Mizan) TrxID: BDHINDKRXR দিয়ে EXP-3543 অর্ডার সাবমিট করেছেন।",
+    "timestamp": "আজ, ১২:৪৯ PM",
+    "ip": "103.145.74.12",
+    "city": "ঢাকা",
+    "device": "Mobile (Android)",
+    "statusBadge": "নতুন অর্ডার"
+  },
+  {
+    "id": "ACT-1002",
+    "visitorId": "VIS-9412",
+    "category": "payment",
+    "title": "বিকাশ নম্বর কপি করেছেন",
+    "details": "অফিশিয়াল পেমেন্ট নম্বর +8801929027577 ক্লিপবোর্ডে কপি করেছেন।",
+    "timestamp": "আজ, ১২:৪৫ PM",
+    "ip": "103.145.74.12",
+    "city": "ঢাকা",
+    "device": "Mobile (Android)",
+    "statusBadge": "পেমেন্ট কপি"
+  },
+  {
+    "id": "ACT-1003",
+    "visitorId": "VIS-8831",
+    "category": "chat",
+    "title": "লাইভ চ্যাটে প্রশ্ন করেছেন",
+    "details": "প্রশ্ন: \"আমার ১ হাজার follower আছে, monetize হবে?\" উত্তর রিসিভ করেছেন।",
+    "timestamp": "আজ, ০১:০৮ PM",
+    "ip": "103.230.104.18",
+    "city": "চট্টগ্রাম",
+    "device": "Desktop (Windows)",
+    "statusBadge": "সাপোর্ট চ্যাট"
+  },
+  {
+    "id": "ACT-1004",
+    "visitorId": "VIS-8831",
+    "category": "navigation",
+    "title": "মনিটাইজেশন যোগ্যতা টেস্ট করেছেন",
+    "details": "এলিজিটিবিলিটি চেকারে পেজ স্ট্যাটাস গ্রিন ও পলিসি রিকোয়ারমেন্ট দেখেছেন।",
+    "timestamp": "আজ, ১২:৫৮ PM",
+    "ip": "103.230.104.18",
+    "city": "চট্টগ্রাম",
+    "device": "Desktop (Windows)",
+    "statusBadge": "টুল ব্যবহার"
+  },
+  {
+    "id": "ACT-1005",
+    "visitorId": "VIS-7629",
+    "category": "visitor",
+    "title": "নতুন ভিজিটর ওয়েবসাইটে প্রবেশ করেছেন",
+    "details": "ফেসবুক রেফারেল থেকে সিলেট অঞ্চল থেকে মোবাইল ডিভাইসে আগমন।",
+    "timestamp": "আজ, ১০:০৫ AM",
+    "ip": "118.179.223.5",
+    "city": "সিলেট",
+    "device": "Mobile (iOS)",
+    "statusBadge": "ওয়েব ভিজিট"
+  }
+]

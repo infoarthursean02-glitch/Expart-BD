@@ -179,6 +179,38 @@ export const getActivities = (): ActivityLogRecord[] => {
   }
 };
 
+export const syncVisitorsWithBackend = async (): Promise<WebVisitorRecord[]> => {
+  try {
+    const res = await fetch('/api/visitors');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.visitors) && data.visitors.length > 0) {
+        localStorage.setItem(VISITORS_KEY, JSON.stringify(data.visitors));
+        return data.visitors;
+      }
+    }
+  } catch (err) {
+    // offline fallback
+  }
+  return getVisitors();
+};
+
+export const syncActivitiesWithBackend = async (): Promise<ActivityLogRecord[]> => {
+  try {
+    const res = await fetch('/api/activities');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.activities) && data.activities.length > 0) {
+        localStorage.setItem(ACTIVITIES_KEY, JSON.stringify(data.activities));
+        return data.activities;
+      }
+    }
+  } catch (err) {
+    // offline fallback
+  }
+  return getActivities();
+};
+
 export const recordActivity = (
   category: ActivityLogRecord['category'],
   title: string,
@@ -204,6 +236,13 @@ export const recordActivity = (
     const updated = [newAct, ...current.slice(0, 49)]; // keep recent 50
     localStorage.setItem(ACTIVITIES_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('expart_activity_changed'));
+
+    // Sync to backend
+    fetch('/api/activities', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newAct),
+    }).catch(() => {});
   } catch (err) {
     console.error('Error recording activity:', err);
   }
@@ -227,7 +266,7 @@ export const trackCurrentVisitor = async (pageName: string = 'হোমপেজ
         if (v.id === visitorId) {
           const pages = v.pagesVisited || [];
           if (!pages.includes(pageName)) pages.push(pageName);
-          return {
+          const updatedVis: WebVisitorRecord = {
             ...v,
             currentPage: pageName,
             pagesVisited: pages,
@@ -235,6 +274,12 @@ export const trackCurrentVisitor = async (pageName: string = 'হোমপেজ
             isOnline: true,
             totalActions: (v.totalActions || 0) + 1,
           };
+          fetch('/api/visitors', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedVis),
+          }).catch(() => {});
+          return updatedVis;
         }
         return v;
       });
@@ -264,6 +309,12 @@ export const trackCurrentVisitor = async (pageName: string = 'হোমপেজ
       const updated = [newVisitor, ...visitors];
       localStorage.setItem(VISITORS_KEY, JSON.stringify(updated));
       window.dispatchEvent(new CustomEvent('expart_visitor_changed'));
+
+      fetch('/api/visitors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newVisitor),
+      }).catch(() => {});
     }
   } catch (err) {
     console.error('Error tracking visitor:', err);

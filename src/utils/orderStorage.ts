@@ -4,6 +4,27 @@ const STORAGE_KEY = 'expart_bd_orders_v1';
 const SETTINGS_KEY = 'expart_bd_settings_v1';
 const FAQS_KEY = 'expart_bd_faqs_v1';
 const FEATURES_KEY = 'expart_bd_features_v1';
+const INITIALIZED_FLAG = 'expart_bd_orders_init_done';
+const DELETED_ORDERS_KEY = 'expart_bd_deleted_ids_v1';
+
+export const getDeletedOrderIds = (): string[] => {
+  try {
+    const raw = localStorage.getItem(DELETED_ORDERS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const addDeletedOrderId = (id: string): void => {
+  try {
+    const current = getDeletedOrderIds();
+    if (!current.includes(id)) {
+      current.push(id);
+      localStorage.setItem(DELETED_ORDERS_KEY, JSON.stringify(current));
+    }
+  } catch {}
+};
 
 const DEFAULT_SETTINGS: AdminSettings = {
   paymentNumber: '+8801929027577',
@@ -16,35 +37,7 @@ const DEFAULT_SETTINGS: AdminSettings = {
   announcementText: '🔥 বিশেষ অফার: সম্পূর্ণ ফেসবুক মনিটাইজেশন প্যাকেজ এখন মাত্র ৳২,৯৯৯ টাকায়!',
 };
 
-const INITIAL_ORDERS: OrderRecord[] = [
-  {
-    id: 'EXP-3543',
-    fullName: 'Mizan',
-    phoneNumber: '01601300122',
-    pageUrl: 'https://facebook.com/mizan.page',
-    paymentMethod: 'bKash',
-    senderNumber: '01601300122',
-    trxId: 'BDHINDKRXR',
-    extraTrxChars: '9A',
-    amount: 2999,
-    status: 'checking',
-    createdAt: 'আজ, ১২:৪৯ PM',
-    notes: 'ফেসবুক পেজ মনিটাইজেশন সার্ভিস সেটআপ',
-    clientLocation: {
-      ip: '103.145.74.12',
-      city: 'ঢাকা',
-      country: 'বাংলাদেশ',
-      formattedAddress: 'ঢাকা, বাংলাদেশ',
-      latitude: 23.8103,
-      longitude: 90.4125,
-      mapsUrl: 'https://www.google.com/maps?q=23.8103,90.4125',
-      source: 'ip',
-      device: 'Desktop',
-      os: 'Windows',
-      browser: 'Chrome'
-    }
-  }
-];
+const INITIAL_ORDERS: OrderRecord[] = [];
 
 // Cross-tab broadcast channel for instant multi-window sync
 const orderBroadcast = typeof window !== 'undefined' && 'BroadcastChannel' in window
@@ -73,29 +66,32 @@ export const syncOrdersWithBackend = async (): Promise<OrderRecord[]> => {
     if (res.ok) {
       const data = await res.json();
       if (data.success && Array.isArray(data.orders)) {
+        const serverOrders: OrderRecord[] = data.orders;
         const local = getOrders();
+
         const map = new Map<string, OrderRecord>();
-        // Add backend orders
-        data.orders.forEach((o: OrderRecord) => map.set(o.id, o));
-        // Add local orders not yet on backend
-        local.forEach((o: OrderRecord) => {
+        // Server orders are the authoritative source
+        serverOrders.forEach((o) => map.set(o.id, o));
+
+        // Add any local unsynced new orders
+        local.forEach((o) => {
           if (!map.has(o.id)) {
             map.set(o.id, o);
             fetch('/api/orders', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(o)
+              body: JSON.stringify(o),
             }).catch(() => {});
           }
         });
+
         const merged = Array.from(map.values());
         localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-        window.dispatchEvent(new CustomEvent('expart_order_changed'));
         return merged;
       }
     }
   } catch (err) {
-    // offline or static fallback
+    // offline fallback
   }
   return getOrders();
 };
@@ -152,37 +148,34 @@ export const getOrders = (): OrderRecord[] => {
   try {
     const data = localStorage.getItem(STORAGE_KEY);
     if (!data) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_ORDERS));
-      return INITIAL_ORDERS;
+      return [];
     }
     const parsed: OrderRecord[] = JSON.parse(data);
-    // Filter out old legacy mock test orders
-    const cleaned = parsed.filter(
+    const filtered = parsed.filter(
       (o) => !['EXP-9142', 'EXP-8820', 'EXP-7519'].includes(o.id)
     );
-    // If cleaned is empty, restore with INITIAL_ORDERS (including Mizan's order)
-    if (cleaned.length === 0 && INITIAL_ORDERS.length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_ORDERS));
-      return INITIAL_ORDERS;
-    }
-    if (cleaned.length !== parsed.length) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
-    }
-    return cleaned;
+    return filtered;
   } catch (e) {
     console.error('Error reading orders from localStorage', e);
-    return INITIAL_ORDERS;
+    return [];
   }
 };
 
 export const saveOrder = (order: OrderRecord): void => {
   try {
+    // If order was previously marked deleted, un-mark it
+    const deletedIds = getDeletedOrderIds();
+    if (deletedIds.includes(order.id)) {
+      const remaining = deletedIds.filter((id) => id !== order.id);
+      localStorage.setItem(DELETED_ORDERS_KEY, JSON.stringify(remaining));
+    }
+
     const current = getOrders();
     const exists = current.some((o) => o.id === order.id);
     const updated = exists ? current.map((o) => (o.id === order.id ? order : o)) : [order, ...current];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('expart_order_changed'));
-    orderBroadcast?.postMessage({ type: 'ORDER_SYNC' });
+    orderBroadcast?.postMessage({ type: 'ORDER_SYNC', orderId: order.id });
 
     // Send to backend
     fetch('/api/orders', {
@@ -259,11 +252,12 @@ export const updateOrderLocation = (
 
 export const deleteOrder = (id: string): void => {
   try {
+    addDeletedOrderId(id);
     const current = getOrders();
     const updated = current.filter((ord) => ord.id !== id);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('expart_order_changed'));
-    orderBroadcast?.postMessage({ type: 'ORDER_SYNC' });
+    orderBroadcast?.postMessage({ type: 'ORDER_SYNC', deletedId: id });
 
     fetch(`/api/orders/${id}`, {
       method: 'DELETE',
