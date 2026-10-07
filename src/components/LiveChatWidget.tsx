@@ -27,6 +27,7 @@ import {
 } from '../utils/chatStorage';
 import { captureClientLocation } from '../utils/clientLocation';
 import { AUTOMATED_QA_LIST, AUTOMATED_QA_CATEGORIES, AutomatedQAItem } from '../utils/chatAiEngine';
+import { recordActivity } from '../utils/activityTracker';
 
 export const LiveChatWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -85,6 +86,7 @@ export const LiveChatWidget: React.FC = () => {
     setIsTyping(true);
 
     try {
+      recordActivity('chat', 'লাইভ চ্যাটে প্রশ্ন করেছেন', `প্রশ্ন: "${message.slice(0, 80)}"`, 'সাপোর্ট চ্যাট');
       const updated = await sendClientMessage(message, clientLocation);
       setSession(updated);
     } catch (err) {

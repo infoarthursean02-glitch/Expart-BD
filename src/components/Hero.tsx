@@ -61,7 +61,7 @@ export const Hero: React.FC<HeroProps> = ({ onOrderClick }) => {
           <div className="px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-2 text-xs">
             <CreditCard className="w-4 h-4 text-orange-600" />
             <span className="text-slate-600">বিকাশ ও নগদ (পার্সোনাল): </span>
-            <span className="font-mono font-bold text-slate-900">+8801908769186</span>
+            <span className="font-mono font-bold text-slate-900">+8801929027577</span>
           </div>
         </div>
 

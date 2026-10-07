@@ -6,7 +6,7 @@ const FAQS_KEY = 'expart_bd_faqs_v1';
 const FEATURES_KEY = 'expart_bd_features_v1';
 
 const DEFAULT_SETTINGS: AdminSettings = {
-  paymentNumber: '+8801908769186',
+  paymentNumber: '+8801929027577',
   packagePrice: 2999,
   businessName: 'Expart BD',
   adminUsername: 'eXPART bd',
@@ -117,7 +117,7 @@ const INITIAL_FAQS: FaqItem[] = [
     id: 'faq-3',
     question: 'সার্ভিস ফি কত এবং কীভাবে পেমেন্ট করব? (How much does the service cost?)',
     answer:
-      'আমাদের সম্পূর্ণ ফেসবুক মনিটাইজেশন প্যাকেজের মূল্য এককালীন মাত্র ৳২,৯৯৯ টাকা। আপনি আমাদের অফিশিয়াল বিকাশ অথবা নগদ পার্সোনাল নম্বরে (+8801908769186) Send Money করে প্রাপ্ত Transaction ID (TrxID) দিয়ে অর্ডার কনফার্ম করতে পারবেন। কোনো লুকানো চার্জ নেই।',
+      'আমাদের সম্পূর্ণ ফেসবুক মনিটাইজেশন প্যাকেজের মূল্য এককালীন মাত্র ৳২,৯৯৯ টাকা। আপনি আমাদের অফিশিয়াল বিকাশ অথবা নগদ পার্সোনাল নম্বরে (+8801929027577) Send Money করে প্রাপ্ত Transaction ID (TrxID) দিয়ে অর্ডার কনফার্ম করতে পারবেন। কোনো লুকানো চার্জ নেই।',
   },
   {
     id: 'faq-4',
@@ -281,8 +281,14 @@ export const getSettings = (): AdminSettings => {
       return DEFAULT_SETTINGS;
     }
     const parsed = JSON.parse(data);
-    if (parsed.paymentNumber === '01601300122' || !parsed.paymentNumber) {
-      parsed.paymentNumber = '+8801908769186';
+    if (
+      !parsed.paymentNumber || 
+      parsed.paymentNumber === '01601300122' || 
+      parsed.paymentNumber === '+8801908769186' || 
+      parsed.paymentNumber.includes('01908769186') ||
+      parsed.paymentNumber.includes('01601300122')
+    ) {
+      parsed.paymentNumber = '+8801929027577';
       localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...DEFAULT_SETTINGS, ...parsed }));
     }
     return { ...DEFAULT_SETTINGS, ...parsed };
@@ -295,6 +301,11 @@ export const saveSettings = (newSettings: AdminSettings): void => {
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(newSettings));
     window.dispatchEvent(new CustomEvent('expart_settings_changed'));
+    fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newSettings),
+    }).catch(() => {});
   } catch (e) {
     console.error('Error saving settings', e);
   }
@@ -367,6 +378,11 @@ export const savePackageFeature = (feature: PackageFeatureItem): void => {
     const updated = [...current, feature];
     localStorage.setItem(FEATURES_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('expart_features_changed'));
+    fetch('/api/features', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(feature),
+    }).catch(() => {});
   } catch (e) {
     console.error('Error saving feature', e);
   }
@@ -378,6 +394,14 @@ export const updatePackageFeature = (id: string, updatedFeat: Partial<PackageFea
     const updated = current.map((f) => (f.id === id ? { ...f, ...updatedFeat } : f));
     localStorage.setItem(FEATURES_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('expart_features_changed'));
+    const item = updated.find((f) => f.id === id);
+    if (item) {
+      fetch('/api/features', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(item),
+      }).catch(() => {});
+    }
   } catch (e) {
     console.error('Error updating feature', e);
   }
@@ -389,6 +413,9 @@ export const deletePackageFeature = (id: string): void => {
     const updated = current.filter((f) => f.id !== id);
     localStorage.setItem(FEATURES_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('expart_features_changed'));
+    fetch(`/api/features/${id}`, {
+      method: 'DELETE',
+    }).catch(() => {});
   } catch (e) {
     console.error('Error deleting feature', e);
   }

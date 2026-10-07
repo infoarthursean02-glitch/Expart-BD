@@ -35,9 +35,26 @@ import {
   MapPin,
   Send,
   Globe,
-  Camera
+  Camera,
+  Folder,
+  FolderOpen,
+  Users,
+  Activity,
+  Smartphone,
+  Laptop,
+  ChevronRight
 } from 'lucide-react';
-import { OrderRecord, OrderStatus, AdminSettings, PaymentMethod, FaqItem, PackageFeatureItem, ChatSession } from '../types';
+import { 
+  OrderRecord, 
+  OrderStatus, 
+  AdminSettings, 
+  PaymentMethod, 
+  FaqItem, 
+  PackageFeatureItem, 
+  ChatSession,
+  WebVisitorRecord,
+  ActivityLogRecord
+} from '../types';
 import { ExpartBDLogo } from './ExpartBDLogo';
 import { 
   getOrders, 
@@ -62,6 +79,7 @@ import {
   sendAdminReply, 
   markSessionAsReadByAdmin 
 } from '../utils/chatStorage';
+import { getVisitors, getActivities } from '../utils/activityTracker';
 
 interface AdminDashboardProps {
   onBackToWeb: () => void;
@@ -138,6 +156,47 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
   const [editingFeatureId, setEditingFeatureId] = useState<string | null>(null);
   const [featureForm, setFeatureForm] = useState({ text: '', bn: '' });
 
+  // Folder-by-folder Sub-view inside "সকল অর্ডার ও TrxID তালিকা"
+  const [orderFolderView, setOrderFolderView] = useState<'orders' | 'visitors' | 'activities' | 'services'>('orders');
+
+  // Visitors & Activities State
+  const [visitors, setVisitors] = useState<WebVisitorRecord[]>(getVisitors());
+  const [activities, setActivities] = useState<ActivityLogRecord[]>(getActivities());
+  const [visitorFilter, setVisitorFilter] = useState<'all' | 'online' | 'mobile' | 'desktop'>('all');
+  const [activityCategoryFilter, setActivityCategoryFilter] = useState<string>('all');
+  const [selectedVisitorForModal, setSelectedVisitorForModal] = useState<WebVisitorRecord | null>(null);
+
+  // In-App Universal Delete Confirmation Modal State (Bypasses browser iframe window.confirm blocking)
+  const [deleteConfirmItem, setDeleteConfirmItem] = useState<{
+    type: 'order' | 'feature' | 'faq';
+    id: string;
+    title: string;
+  } | null>(null);
+
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const confirmExecuteDelete = () => {
+    if (!deleteConfirmItem) return;
+    const { type, id } = deleteConfirmItem;
+    if (type === 'order') {
+      deleteOrder(id);
+      showToast('অর্ডারটি স্থায়ীভাবে মুছে ফেলা হয়েছে');
+    } else if (type === 'feature') {
+      deletePackageFeature(id);
+      showToast('সার্ভিস ফিচারটি স্থায়ীভাবে মুছে ফেলা হয়েছে');
+    } else if (type === 'faq') {
+      deleteFaq(id);
+      showToast('FAQ প্রশ্নটি মুছে ফেলা হয়েছে');
+    }
+    setDeleteConfirmItem(null);
+    loadData();
+  };
+
   const loadData = () => {
     setOrders(getOrders());
     const currentSettings = getSettings();
@@ -146,6 +205,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
     setFaqsState(getFaqs());
     setFeaturesState(getPackageFeatures());
     setChatSessions(getChatSessions());
+    setVisitors(getVisitors());
+    setActivities(getActivities());
   };
 
   useEffect(() => {
@@ -159,12 +220,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
     const handleFaqsChange = () => loadData();
     const handleFeaturesChange = () => loadData();
     const handleChatChange = () => setChatSessions(getChatSessions());
+    const handleVisitorChange = () => setVisitors(getVisitors());
+    const handleActivityChange = () => setActivities(getActivities());
 
     // Auto-polling every 2.5 seconds for instant real-time synchronization across devices & tabs
     const pollInterval = setInterval(() => {
       syncOrdersWithBackend().then((latest) => {
         if (Array.isArray(latest)) setOrders(latest);
       });
+      setVisitors(getVisitors());
+      setActivities(getActivities());
     }, 2500);
 
     window.addEventListener('expart_order_changed', handleOrderChange);
@@ -172,6 +237,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
     window.addEventListener('expart_faqs_changed', handleFaqsChange);
     window.addEventListener('expart_features_changed', handleFeaturesChange);
     window.addEventListener('expart_chat_changed', handleChatChange);
+    window.addEventListener('expart_visitor_changed', handleVisitorChange);
+    window.addEventListener('expart_activity_changed', handleActivityChange);
     return () => {
       clearInterval(pollInterval);
       window.removeEventListener('expart_order_changed', handleOrderChange);
@@ -179,6 +246,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
       window.removeEventListener('expart_faqs_changed', handleFaqsChange);
       window.removeEventListener('expart_features_changed', handleFeaturesChange);
       window.removeEventListener('expart_chat_changed', handleChatChange);
+      window.removeEventListener('expart_visitor_changed', handleVisitorChange);
+      window.removeEventListener('expart_activity_changed', handleActivityChange);
     };
   }, []);
 
@@ -226,11 +295,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
     loadData();
   };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm('আপনি কি নিশ্চিত যে এই অর্ডারটি সিস্টেম থেকে মুছে ফেলতে চান?')) {
-      deleteOrder(id);
-      loadData();
-    }
+  const handleDelete = (id: string, title?: string) => {
+    const ord = orders.find((o) => o.id === id);
+    setDeleteConfirmItem({
+      type: 'order',
+      id,
+      title: title || (ord?.fullName ? `${ord.fullName} (অর্ডার ${id})` : `অর্ডার ${id}`),
+    });
   };
 
   const handleSaveNote = (id: string) => {
@@ -315,11 +386,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
     loadData();
   };
 
-  const handleDeleteFaq = (id: string) => {
-    if (window.confirm('আপনি কি এই FAQ প্রশ্নটি মুছে ফেলতে চান?')) {
-      deleteFaq(id);
-      loadData();
-    }
+  const handleDeleteFaq = (id: string, title?: string) => {
+    const faq = faqs.find((f) => f.id === id);
+    setDeleteConfirmItem({
+      type: 'faq',
+      id,
+      title: title || faq?.question || 'FAQ প্রশ্ন',
+    });
   };
 
   // Feature Handlers
@@ -340,6 +413,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
 
     if (editingFeatureId) {
       updatePackageFeature(editingFeatureId, { text: featureForm.text, bn: featureForm.bn });
+      showToast('সার্ভিস ফিচার সফলভাবে আপডেট করা হয়েছে');
     } else {
       const newFeat: PackageFeatureItem = {
         id: `feat-${Date.now()}`,
@@ -347,16 +421,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
         bn: featureForm.bn.trim(),
       };
       savePackageFeature(newFeat);
+      showToast('নতুন সার্ভিস ফিচার সফলভাবে যুক্ত হয়েছে');
     }
     setFeatureModalOpen(false);
     loadData();
   };
 
-  const handleDeleteFeature = (id: string) => {
-    if (window.confirm('আপনি কি এই প্যাকেজ ফিচারটি মুছে ফেলতে চান?')) {
-      deletePackageFeature(id);
-      loadData();
-    }
+  const handleDeleteFeature = (id: string, title?: string) => {
+    const feat = features.find((f) => f.id === id);
+    setDeleteConfirmItem({
+      type: 'feature',
+      id,
+      title: title || feat?.bn || feat?.text || 'সার্ভিস ফিচার',
+    });
   };
 
   // Stats calculation
@@ -961,6 +1038,84 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                 </div>
               </div>
 
+              {/* Folder-by-Folder Master Navigation Tabs */}
+              <div className="p-2 sm:p-2.5 rounded-3xl bg-slate-100 border border-slate-200 flex flex-wrap items-center gap-2 shadow-xs">
+                <button
+                  type="button"
+                  onClick={() => setOrderFolderView('orders')}
+                  className={`flex-1 sm:flex-none px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    orderFolderView === 'orders'
+                      ? 'bg-white text-orange-700 shadow-md border border-orange-200'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                  }`}
+                >
+                  <FolderOpen className={`w-4 h-4 ${orderFolderView === 'orders' ? 'text-orange-600' : 'text-slate-400'}`} />
+                  <span>📁 অর্ডার ও TrxID তালিকা</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                    orderFolderView === 'orders' ? 'bg-orange-100 text-orange-800' : 'bg-slate-200 text-slate-700'
+                  }`}>
+                    {orders.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setOrderFolderView('visitors')}
+                  className={`flex-1 sm:flex-none px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    orderFolderView === 'visitors'
+                      ? 'bg-white text-blue-700 shadow-md border border-blue-200'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                  }`}
+                >
+                  <Users className={`w-4 h-4 ${orderFolderView === 'visitors' ? 'text-blue-600' : 'text-slate-400'}`} />
+                  <span>📁 ওয়েব ভিজিটর ডাটা</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                    orderFolderView === 'visitors' ? 'bg-blue-100 text-blue-800' : 'bg-slate-200 text-slate-700'
+                  }`}>
+                    {visitors.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setOrderFolderView('activities')}
+                  className={`flex-1 sm:flex-none px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    orderFolderView === 'activities'
+                      ? 'bg-white text-purple-700 shadow-md border border-purple-200'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                  }`}
+                >
+                  <Activity className={`w-4 h-4 ${orderFolderView === 'activities' ? 'text-purple-600' : 'text-slate-400'}`} />
+                  <span>📁 অ্যাক্টিভিটি টাইমলাইন</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                    orderFolderView === 'activities' ? 'bg-purple-100 text-purple-800' : 'bg-slate-200 text-slate-700'
+                  }`}>
+                    {activities.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setOrderFolderView('services')}
+                  className={`flex-1 sm:flex-none px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    orderFolderView === 'services'
+                      ? 'bg-white text-emerald-700 shadow-md border border-emerald-200'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                  }`}
+                >
+                  <ShoppingBag className={`w-4 h-4 ${orderFolderView === 'services' ? 'text-emerald-600' : 'text-slate-400'}`} />
+                  <span>📁 সার্ভিস প্যাকেজ ও ফিচার</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                    orderFolderView === 'services' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'
+                  }`}>
+                    {features.length}
+                  </span>
+                </button>
+              </div>
+
+              {/* FOLDER 1: ORDERS & TrxID LIST */}
+              {orderFolderView === 'orders' && (
+                <div className="space-y-4">
               {/* Filter & Search Bar */}
               <div className="p-4 rounded-3xl bg-white border border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-xs">
                 <div className="relative flex-1">
@@ -1278,6 +1433,326 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
               </div>
             </div>
           )}
+
+          {/* FOLDER 2: WEB VISITORS LIST */}
+          {orderFolderView === 'visitors' && (
+            <div className="space-y-4">
+              {/* Visitor Stats Counters */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                  <div className="text-[11px] text-slate-500 font-bold uppercase">মোট ভিজিটর</div>
+                  <div className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5">{visitors.length}</div>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-white border border-emerald-200 bg-emerald-50/20 shadow-xs">
+                  <div className="text-[11px] text-emerald-700 font-bold uppercase">বর্তমানে অনলাইন</div>
+                  <div className="text-xl sm:text-2xl font-black text-emerald-600 mt-0.5 flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
+                    <span>{visitors.filter((v) => v.isOnline).length}</span>
+                  </div>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                  <div className="text-[11px] text-slate-500 font-bold uppercase">মোবাইল ডিভাইস</div>
+                  <div className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5">
+                    {visitors.filter((v) => (v.device || '').toLowerCase().includes('mobile')).length}
+                  </div>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                  <div className="text-[11px] text-slate-500 font-bold uppercase">ডেস্কটপ ইউজার</div>
+                  <div className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5">
+                    {visitors.filter((v) => (v.device || '').toLowerCase().includes('desktop')).length}
+                  </div>
+                </div>
+              </div>
+
+              {/* Filter Pills */}
+              <div className="p-3 rounded-2xl bg-white border border-slate-200 flex items-center gap-2 overflow-x-auto text-xs">
+                <button
+                  type="button"
+                  onClick={() => setVisitorFilter('all')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer shrink-0 ${
+                    visitorFilter === 'all' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  সকল ভিজিটর ({visitors.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVisitorFilter('online')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer shrink-0 ${
+                    visitorFilter === 'online' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  অনলাইন ({visitors.filter((v) => v.isOnline).length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVisitorFilter('mobile')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer shrink-0 ${
+                    visitorFilter === 'mobile' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  মোবাইল ({visitors.filter((v) => (v.device || '').toLowerCase().includes('mobile')).length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVisitorFilter('desktop')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer shrink-0 ${
+                    visitorFilter === 'desktop' ? 'bg-slate-800 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  ডেস্কটপ ({visitors.filter((v) => (v.device || '').toLowerCase().includes('desktop')).length})
+                </button>
+              </div>
+
+              {/* Visitors Cards List */}
+              <div className="space-y-3">
+                {visitors
+                  .filter((v) => {
+                    if (visitorFilter === 'online') return v.isOnline;
+                    if (visitorFilter === 'mobile') return (v.device || '').toLowerCase().includes('mobile');
+                    if (visitorFilter === 'desktop') return (v.device || '').toLowerCase().includes('desktop');
+                    return true;
+                  })
+                  .map((v) => (
+                    <div
+                      key={v.id}
+                      className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 hover:border-blue-300 transition-all shadow-xs space-y-3"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5">
+                          <span className="font-mono font-bold text-slate-900 text-sm">{v.id}</span>
+                          {v.isOnline ? (
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px] flex items-center gap-1 border border-emerald-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                              অনলাইন
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-medium border border-slate-200">
+                              অফলাইন
+                            </span>
+                          )}
+                          <span className="text-xs text-slate-500 font-mono">IP: {v.ip || '103.xxx'}</span>
+                        </div>
+
+                        <div className="text-xs text-slate-500">
+                          সর্বশেষ সক্রিয়: <span className="font-bold text-slate-700">{v.lastActive}</span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">লোকেশন ও নেটওয়ার্ক:</span>
+                          <span className="font-bold text-slate-800">{v.city || 'ঢাকা'}, {v.country || 'বাংলাদেশ'}</span>
+                          <span className="text-[11px] text-slate-500 block truncate">{v.isp || 'Local ISP'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">ডিভাইস ও ব্রাউজার:</span>
+                          <span className="font-bold text-slate-800">{v.device || 'Mobile'} ({v.os || 'Android'})</span>
+                          <span className="text-[11px] text-slate-500 block">{v.browser || 'Chrome'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">বর্তমান পেজ ও সক্রিয়তা:</span>
+                          <span className="font-bold text-orange-600 truncate block">{v.currentPage || 'হোমপেজ'}</span>
+                          <span className="text-[11px] text-slate-500 block">{v.totalActions}টি ইন্টারঅ্যাকশন সম্পন্ন</span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100 text-[11px]">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-slate-400">ভিজিটকৃত পেজ:</span>
+                          {(v.pagesVisited || []).map((page, idx) => (
+                            <span key={idx} className="px-2 py-0.5 rounded-md bg-white text-slate-600 border border-slate-200">
+                              {page}
+                            </span>
+                          ))}
+                        </div>
+                        {v.mapsUrl && (
+                          <a
+                            href={v.mapsUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-bold"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            <span>ম্যাপে অবস্থান দেখুন</span>
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* FOLDER 3: USER ACTIVITY LOGS */}
+          {orderFolderView === 'activities' && (
+            <div className="space-y-4">
+              {/* Category Filter */}
+              <div className="p-3 rounded-2xl bg-white border border-slate-200 flex items-center gap-2 overflow-x-auto text-xs">
+                <button
+                  type="button"
+                  onClick={() => setActivityCategoryFilter('all')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer shrink-0 ${
+                    activityCategoryFilter === 'all' ? 'bg-purple-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  সকল অ্যাক্টিভিটি ({activities.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActivityCategoryFilter('order')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer shrink-0 ${
+                    activityCategoryFilter === 'order' ? 'bg-orange-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  অর্ডার ও TrxID ({activities.filter((a) => a.category === 'order').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActivityCategoryFilter('payment')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer shrink-0 ${
+                    activityCategoryFilter === 'payment' ? 'bg-pink-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  পেমেন্ট নম্বর কপি ({activities.filter((a) => a.category === 'payment').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActivityCategoryFilter('chat')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer shrink-0 ${
+                    activityCategoryFilter === 'chat' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  লাইভ সাপোর্ট চ্যাট ({activities.filter((a) => a.category === 'chat').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActivityCategoryFilter('navigation')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer shrink-0 ${
+                    activityCategoryFilter === 'navigation' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  পেজ ব্রাউজিং ({activities.filter((a) => a.category === 'navigation').length})
+                </button>
+              </div>
+
+              {/* Activities Timeline */}
+              <div className="space-y-3">
+                {activities
+                  .filter((a) => activityCategoryFilter === 'all' || a.category === activityCategoryFilter)
+                  .map((act) => {
+                    const badgeColor =
+                      act.category === 'order'
+                        ? 'bg-orange-100 text-orange-800 border-orange-200'
+                        : act.category === 'payment'
+                        ? 'bg-pink-100 text-pink-800 border-pink-200'
+                        : act.category === 'chat'
+                        ? 'bg-blue-100 text-blue-800 border-blue-200'
+                        : 'bg-emerald-100 text-emerald-800 border-emerald-200';
+
+                    return (
+                      <div
+                        key={act.id}
+                        className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-purple-300 transition-all shadow-xs flex items-start gap-3.5"
+                      >
+                        <div className="p-2 rounded-xl bg-slate-100 shrink-0 mt-0.5">
+                          <Activity className="w-4 h-4 text-purple-600" />
+                        </div>
+
+                        <div className="flex-1 space-y-1">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${badgeColor}`}>
+                                {act.statusBadge || act.category}
+                              </span>
+                              <h4 className="font-bold text-slate-900 text-xs sm:text-sm">{act.title}</h4>
+                            </div>
+                            <span className="text-[11px] text-slate-400 font-mono">{act.timestamp}</span>
+                          </div>
+
+                          <p className="text-xs text-slate-600 leading-relaxed">{act.details}</p>
+
+                          <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] text-slate-400 font-mono">
+                            <span>ভিজিটর: {act.visitorId}</span>
+                            {act.ip && <span>IP: {act.ip}</span>}
+                            {act.city && <span>লোকেশন: {act.city}</span>}
+                            {act.device && <span>ডিভাইস: {act.device}</span>}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* FOLDER 4: SERVICES & FEATURES LIST (With Instant Delete Option) */}
+          {orderFolderView === 'services' && (
+            <div className="space-y-4">
+              <div className="p-4 rounded-3xl bg-white border border-slate-200 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+                <div>
+                  <h3 className="font-black text-slate-900 text-base">
+                    প্যাকেজে অন্তর্ভুক্ত সার্ভিস ও ফিচারসমূহ
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    এখান থেকে সরাসরি যেকোনো সার্ভিস এডিট করুন বা মুছে ফেলুন। পরিবর্তনগুলো স্বয়ংক্রিয়ভাবে প্যাকেজ সেকশনে আপডেট হবে।
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleOpenFeatureModal()}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md shadow-emerald-600/20"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>নতুন সার্ভিস যোগ করুন</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {features.map((feat) => (
+                  <div
+                    key={feat.id}
+                    className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 hover:border-emerald-300 transition-all shadow-xs flex flex-col justify-between space-y-3"
+                  >
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-[10px] text-slate-400 font-bold bg-slate-100 px-2 py-0.5 rounded">
+                          {feat.id}
+                        </span>
+                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                      </div>
+                      <h4 className="font-bold text-slate-900 text-sm">{feat.bn}</h4>
+                      <p className="text-xs text-slate-500">{feat.text}</p>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenFeatureModal(feat)}
+                        className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                      >
+                        <Edit2 className="w-3 h-3 text-slate-500" />
+                        <span>এডিট</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteFeature(feat.id, feat.bn || feat.text)}
+                        className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1 border border-rose-200"
+                        title="এই সার্ভিসটি অবিলম্বে ডিলিট করুন"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                        <span>মুছে ফেলুন</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+        </div>
+      )}
 
           {/* TAB 3: PENDING VERIFICATION QUEUE */}
           {activeTab === 'pending' && (
@@ -1943,7 +2418,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                       required
                       value={settingsForm.paymentNumber}
                       onChange={(e) => setSettingsForm({ ...settingsForm, paymentNumber: e.target.value })}
-                      placeholder="+8801908769186"
+                      placeholder="+8801929027577"
                       className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono font-bold text-base focus:outline-none focus:border-orange-500 shadow-2xs"
                     />
                     <p className="text-[11px] text-slate-500">
@@ -2550,6 +3025,54 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
             <div className="font-bold text-white">CSV ফাইল সফলভাবে ডাউনলোড হয়েছে!</div>
             <div className="text-[11px] text-slate-300">
               বুককিপিংয়ের জন্য সকল অর্ডারের তালিকা প্রস্তুত।
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Action Success Toast */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 p-4 rounded-2xl bg-slate-900 text-white shadow-2xl flex items-center gap-3 border border-emerald-500/40 text-xs font-bold animate-fadeIn">
+          <div className="w-8 h-8 rounded-xl bg-emerald-500 flex items-center justify-center text-white shrink-0">
+            <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
+          </div>
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Universal In-App Delete Confirmation Modal (Guaranteed deletion without browser confirm blocks) */}
+      {deleteConfirmItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-fadeIn">
+          <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200 space-y-4 animate-scaleUp">
+            <div className="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto border border-rose-200 shadow-sm">
+              <Trash2 className="w-7 h-7" />
+            </div>
+
+            <div className="text-center space-y-2">
+              <h3 className="font-black text-lg text-slate-900">
+                স্থায়ীভাবে মুছে ফেলতে চান?
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed max-w-xs mx-auto">
+                <span className="font-bold text-slate-900">"{deleteConfirmItem.title}"</span> আইটেমটি সিস্টেম ও ডাটাবেজ থেকে অবিলম্বে ডিলিট হয়ে যাবে।
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmItem(null)}
+                className="flex-1 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+              >
+                বাতিল করুন
+              </button>
+              <button
+                type="button"
+                onClick={confirmExecuteDelete}
+                className="flex-1 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all cursor-pointer shadow-lg shadow-rose-600/30 active:scale-95 flex items-center justify-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>হ্যাঁ, ডিলিট করুন</span>
+              </button>
             </div>
           </div>
         </div>

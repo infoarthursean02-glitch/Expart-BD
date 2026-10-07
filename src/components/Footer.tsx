@@ -56,8 +56,8 @@ export const Footer: React.FC = () => {
             <div className="space-y-2.5 text-xs">
               <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1 shadow-inner">
                 <span className="text-[10px] text-slate-400 block uppercase font-mono">বিকাশ ও নগদ পার্সোনাল নম্বর (Send Money)</span>
-                <span className="font-mono text-base font-bold text-white block">+8801908769186</span>
-                <span className="text-[11px] text-slate-400">০১৯০৮-৭৬৯১৮৬ (পার্সোনাল)</span>
+                <span className="font-mono text-base font-bold text-white block">+8801929027577</span>
+                <span className="text-[11px] text-slate-400">০১৯২৯-০২৭৫৭৭ (পার্সোনাল)</span>
               </div>
 
               <div className="flex items-center gap-2 text-slate-400 pt-1">
@@ -86,7 +86,7 @@ export const Footer: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <span className="text-slate-400">বিকাশ/নগদ (পার্সোনাল): +8801908769186</span>
+            <span className="text-slate-400">বিকাশ/নগদ (পার্সোনাল): +8801929027577</span>
             <span className="text-slate-700">·</span>
             <span className="text-slate-400">প্যাকেজ: ৳২,৯৯৯</span>
             <button

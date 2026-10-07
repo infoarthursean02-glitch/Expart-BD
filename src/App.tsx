@@ -19,6 +19,7 @@ import { LiveChatWidget } from './components/LiveChatWidget';
 import { getSettings } from './utils/orderStorage';
 import { AdminSettings } from './types';
 import { Megaphone } from 'lucide-react';
+import { trackCurrentVisitor } from './utils/activityTracker';
 
 const isCurrentRouteAdmin = (): boolean => {
   if (typeof window === 'undefined') return false;
@@ -65,6 +66,11 @@ export default function App() {
     window.addEventListener('popstate', handleLocationChange);
     window.addEventListener('hashchange', handleLocationChange);
     window.addEventListener('keydown', handleKeyDown);
+
+    // Track web visitor
+    if (!isCurrentRouteAdmin()) {
+      trackCurrentVisitor('হোমপেজ');
+    }
 
     return () => {
       window.removeEventListener('expart_settings_changed', handleSettingsChange);

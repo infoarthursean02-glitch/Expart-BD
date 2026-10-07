@@ -100,7 +100,7 @@ export const PricingPackage: React.FC<PricingPackageProps> = ({ onOrderClick }) 
                   <span className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 text-[10px]">পার্সোনাল</span>
                 </div>
                 <div className="text-xs font-mono text-slate-900 font-bold mt-1">
-                  +8801908769186
+                  +8801929027577
                 </div>
               </div>
             </div>

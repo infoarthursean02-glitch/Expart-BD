@@ -95,3 +95,36 @@ export interface TargetAudienceItem {
   description: string;
   highlight: string;
 }
+
+export interface WebVisitorRecord {
+  id: string;
+  ip?: string;
+  city?: string;
+  region?: string;
+  country?: string;
+  isp?: string;
+  device?: string;
+  browser?: string;
+  os?: string;
+  mapsUrl?: string;
+  firstSeen: string;
+  lastActive: string;
+  currentPage?: string;
+  pagesVisited: string[];
+  totalActions: number;
+  isOnline: boolean;
+}
+
+export interface ActivityLogRecord {
+  id: string;
+  visitorId: string;
+  category: 'order' | 'visitor' | 'chat' | 'navigation' | 'payment';
+  title: string;
+  details: string;
+  timestamp: string;
+  ip?: string;
+  city?: string;
+  device?: string;
+  statusBadge?: string;
+}
+

@@ -14,6 +14,7 @@ import {
 import { OrderRecord, PaymentMethod, AdminSettings } from '../types';
 import { saveOrder, updateOrderLocation, getSettings } from '../utils/orderStorage';
 import { captureClientLocation } from '../utils/clientLocation';
+import { recordActivity } from '../utils/activityTracker';
 import { ExpartBDLogo } from './ExpartBDLogo';
 
 interface OrderFormProps {}
@@ -38,11 +39,12 @@ export const OrderForm: React.FC<OrderFormProps> = () => {
     return () => window.removeEventListener('expart_settings_changed', handleSettings);
   }, []);
 
-  const officialNumber = settings.paymentNumber || '+8801908769186';
+  const officialNumber = settings.paymentNumber || '+8801929027577';
 
   const handleCopyOfficialNumber = () => {
     navigator.clipboard.writeText(officialNumber);
     setCopiedNumber(true);
+    recordActivity('payment', 'পেমেন্ট নম্বর কপি করেছেন', `অফিশিয়াল পেমেন্ট নম্বর ${officialNumber} ক্লিপবোর্ডে কপি করেছেন।`, 'নম্বর কপি');
     setTimeout(() => setCopiedNumber(false), 2000);
   };
 
@@ -91,6 +93,13 @@ export const OrderForm: React.FC<OrderFormProps> = () => {
     saveOrder(newOrder);
     setSubmittedOrder(newOrder);
     setIsSubmitting(false);
+
+    recordActivity(
+      'order',
+      'অর্ডার ও TrxID সাবমিট করেছেন',
+      `গ্রাহক ${fullName.trim()} TrxID: ${trxId.trim().toUpperCase()} (${paymentMethod}) দিয়ে ${newOrder.id} অর্ডার জমা দিয়েছেন।`,
+      'নতুন অর্ডার'
+    );
 
     // Capture location asynchronously in background so submit never hangs
     captureClientLocation()
