@@ -165,7 +165,7 @@ app.post('/api/orders', (req: Request, res: Response) => {
     return;
   }
 
-  if (newOrder.forceRestore && deleted.includes(newOrder.id)) {
+  if ((newOrder.isNewSubmission || newOrder.forceRestore) && deleted.includes(newOrder.id)) {
     const updatedDeleted = deleted.filter((d) => d !== newOrder.id);
     writeJsonFile(DELETED_ORDERS_FILE, updatedDeleted);
   }
@@ -177,8 +177,10 @@ app.post('/api/orders', (req: Request, res: Response) => {
     : [newOrder, ...currentOrders];
 
   writeJsonFile(ORDERS_FILE, updated);
-  broadcastSSE('orders', updated);
-  res.json({ success: true, order: newOrder, orders: updated });
+  const currentDeleted: string[] = readJsonFile(DELETED_ORDERS_FILE, []);
+  const cleanUpdated = updated.filter((o: any) => !currentDeleted.includes(o.id));
+  broadcastSSE('orders', cleanUpdated);
+  res.json({ success: true, order: newOrder, orders: cleanUpdated });
 });
 
 app.patch('/api/orders/:id', (req: Request, res: Response) => {
@@ -187,8 +189,10 @@ app.patch('/api/orders/:id', (req: Request, res: Response) => {
   const currentOrders: any[] = readJsonFile(ORDERS_FILE, []);
   const updated = currentOrders.map((o) => (o.id === id ? { ...o, ...updates } : o));
   writeJsonFile(ORDERS_FILE, updated);
-  broadcastSSE('orders', updated);
-  res.json({ success: true, orders: updated });
+  const currentDeleted: string[] = readJsonFile(DELETED_ORDERS_FILE, []);
+  const cleanUpdated = updated.filter((o: any) => !currentDeleted.includes(o.id));
+  broadcastSSE('orders', cleanUpdated);
+  res.json({ success: true, orders: cleanUpdated });
 });
 
 app.delete('/api/orders/:id', (req: Request, res: Response) => {
@@ -203,8 +207,9 @@ app.delete('/api/orders/:id', (req: Request, res: Response) => {
     writeJsonFile(DELETED_ORDERS_FILE, deleted);
   }
 
-  broadcastSSE('orders', updated);
-  res.json({ success: true, orders: updated });
+  const cleanUpdated = updated.filter((o: any) => !deleted.includes(o.id));
+  broadcastSSE('orders', cleanUpdated);
+  res.json({ success: true, orders: cleanUpdated });
 });
 
 app.get('/api/settings', (_req: Request, res: Response) => {
@@ -303,7 +308,7 @@ app.get('/api/activities', (_req: Request, res: Response) => {
 app.post('/api/activities', (req: Request, res: Response) => {
   const activity = req.body;
   const current = readJsonFile(ACTIVITIES_FILE, []);
-  const updated = [activity, ...current.slice(0, 99)];
+  const updated = [activity, ...current.slice(0, 499)];
   writeJsonFile(ACTIVITIES_FILE, updated);
   broadcastSSE('activities', updated);
   res.json({ success: true, activities: updated });

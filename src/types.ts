@@ -113,12 +113,21 @@ export interface WebVisitorRecord {
   pagesVisited: string[];
   totalActions: number;
   isOnline: boolean;
+  // Real-time Traffic Analytics Extensions:
+  referrer?: string;
+  trafficSource?: string;
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  orderNowClicks?: number;
+  timestampMs?: number;
+  dateStr?: string; // 'YYYY-MM-DD'
 }
 
 export interface ActivityLogRecord {
   id: string;
   visitorId: string;
-  category: 'order' | 'visitor' | 'chat' | 'navigation' | 'payment';
+  category: 'order' | 'visitor' | 'chat' | 'navigation' | 'payment' | 'click';
   title: string;
   details: string;
   timestamp: string;
@@ -126,5 +135,14 @@ export interface ActivityLogRecord {
   city?: string;
   device?: string;
   statusBadge?: string;
+  // Real-time Traffic Analytics Extensions:
+  eventType?: 'order_now_click' | 'package_view' | 'payment_copy' | 'chat_open' | 'form_start' | 'order_submit' | 'page_visit' | 'eligibility_check';
+  source?: string;
+  pageUrl?: string;
+  elementClicked?: string;
+  timestampMs?: number;
+  dateStr?: string; // 'YYYY-MM-DD'
 }
+
+export type TrafficDateFilter = 'today' | 'yesterday' | '7days' | '30days' | 'all' | 'custom';
 

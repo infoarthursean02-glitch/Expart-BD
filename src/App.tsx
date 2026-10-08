@@ -19,7 +19,7 @@ import { LiveChatWidget } from './components/LiveChatWidget';
 import { getSettings } from './utils/orderStorage';
 import { AdminSettings } from './types';
 import { Megaphone } from 'lucide-react';
-import { trackCurrentVisitor } from './utils/activityTracker';
+import { trackCurrentVisitor, recordOrderNowClick } from './utils/activityTracker';
 
 const isCurrentRouteAdmin = (): boolean => {
   if (typeof window === 'undefined') return false;
@@ -86,7 +86,8 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const scrollToOrder = () => {
+  const scrollToOrder = (sourceButton: string = 'General CTA') => {
+    recordOrderNowClick(sourceButton);
     if (currentView === 'admin') {
       closeAdmin();
     }
@@ -116,18 +117,18 @@ export default function App() {
       )}
 
       {/* Sticky Navigation */}
-      <Navbar onOrderClick={scrollToOrder} />
+      <Navbar onOrderClick={() => scrollToOrder('Navbar CTA')} />
 
       {/* Main Content Sections */}
       <main className="flex-1">
         {/* Hero Section */}
-        <Hero onOrderClick={scrollToOrder} />
+        <Hero onOrderClick={() => scrollToOrder('Hero Section CTA')} />
 
         {/* Interactive Eligibility Self-Audit Tool */}
-        <EligibilityChecker onOrderClick={scrollToOrder} />
+        <EligibilityChecker onOrderClick={() => scrollToOrder('Eligibility Checker CTA')} />
 
         {/* Section 4: Special Package */}
-        <PricingPackage onOrderClick={scrollToOrder} />
+        <PricingPackage onOrderClick={() => scrollToOrder('Pricing Package Card CTA')} />
 
         {/* Section 6: Who Is This For? */}
         <TargetAudience />
@@ -142,7 +143,7 @@ export default function App() {
         <OrderForm />
 
         {/* Section 9: Final CTA */}
-        <FinalCta onOrderClick={scrollToOrder} />
+        <FinalCta onOrderClick={() => scrollToOrder('Final CTA Banner')} />
       </main>
 
       {/* Footer */}

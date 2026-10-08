@@ -558,7 +558,19 @@ export const LiveChatWidget: React.FC = () => {
       {/* Floating Trigger Bubble Button (Right Side) */}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          if (!isOpen) {
+            recordActivity(
+              'chat',
+              'Live Support Chat Widget Opened',
+              'Visitor opened live chat widget on the landing page.',
+              'Chat Open',
+              'chat_open',
+              'Live Chat Bubble'
+            );
+          }
+          setIsOpen(!isOpen);
+        }}
         className="group relative flex items-center gap-2.5 px-4 py-3 sm:px-5 sm:py-3.5 rounded-full bg-gradient-to-r from-orange-600 via-rose-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-xs sm:text-sm shadow-xl shadow-orange-600/35 hover:shadow-orange-600/50 hover:scale-[1.03] active:scale-[0.98] transition-all cursor-pointer"
         aria-expanded={isOpen}
       >

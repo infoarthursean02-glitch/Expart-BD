@@ -99,8 +99,8 @@ export const PricingPackage: React.FC<PricingPackageProps> = ({ onOrderClick }) 
                   <span className="px-2 py-0.5 rounded-lg bg-orange-100 text-orange-700 border border-orange-200">নগদ</span>
                   <span className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 text-[10px]">পার্সোনাল</span>
                 </div>
-                <div className="text-xs font-mono text-slate-900 font-bold mt-1">
-                  +8801929027577
+                <div className="text-[11px] text-orange-600 font-semibold mt-1">
+                  অর্ডার ফর্মে নম্বর দেওয়া আছে
                 </div>
               </div>
             </div>

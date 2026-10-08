@@ -92,7 +92,7 @@ export const FaqSection: React.FC = () => {
                 বিকাশ ও নগদ পেমেন্ট সংক্রান্ত তথ্য
               </h4>
               <p className="text-xs text-slate-600 mt-0.5">
-                অফিশিয়াল পেমেন্ট নম্বর (বিকাশ ও নগদ পার্সোনাল): <span className="font-mono text-slate-900 font-bold">+8801929027577</span>
+                অফিশিয়াল পেমেন্ট নম্বর ও বিস্তারিত নির্দেশনার জন্য নিচের অর্ডার ফর্মটি দেখুন
               </p>
             </div>
           </div>

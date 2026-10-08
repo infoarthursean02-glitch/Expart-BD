@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CheckSquare, Square, ArrowRight, Activity, CheckCircle2 } from 'lucide-react';
 import { ExpartBDLogo } from './ExpartBDLogo';
+import { recordActivity } from '../utils/activityTracker';
 
 interface EligibilityCheckerProps {
   onOrderClick: () => void;
@@ -15,7 +16,19 @@ export const EligibilityChecker: React.FC<EligibilityCheckerProps> = ({ onOrderC
   });
 
   const toggleCheck = (key: string) => {
-    setChecks((prev) => ({ ...prev, [key]: !prev[key] }));
+    setChecks((prev) => {
+      const updated = { ...prev, [key]: !prev[key] };
+      const count = Object.values(updated).filter(Boolean).length;
+      recordActivity(
+        'navigation',
+        'Eligibility Self-Audit Checked',
+        `Evaluated criteria: ${key}. Preparedness score: ${Math.round((count / 4) * 100)}%`,
+        'Self-Audit',
+        'eligibility_check',
+        `Audit Item: ${key}`
+      );
+      return updated;
+    });
   };
 
   const completedCount = Object.values(checks).filter(Boolean).length;

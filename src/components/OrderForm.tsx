@@ -44,7 +44,14 @@ export const OrderForm: React.FC<OrderFormProps> = () => {
   const handleCopyOfficialNumber = () => {
     navigator.clipboard.writeText(officialNumber);
     setCopiedNumber(true);
-    recordActivity('payment', 'পেমেন্ট নম্বর কপি করেছেন', `অফিশিয়াল পেমেন্ট নম্বর ${officialNumber} ক্লিপবোর্ডে কপি করেছেন।`, 'নম্বর কপি');
+    recordActivity(
+      'payment',
+      'Official Payment Number Copied',
+      `Copied official ${paymentMethod} Send Money number to clipboard.`,
+      'Payment Copy',
+      'payment_copy',
+      `${paymentMethod} Number Copy Button`
+    );
     setTimeout(() => setCopiedNumber(false), 2000);
   };
 
@@ -96,9 +103,11 @@ export const OrderForm: React.FC<OrderFormProps> = () => {
 
     recordActivity(
       'order',
-      'অর্ডার ও TrxID সাবমিট করেছেন',
-      `গ্রাহক ${fullName.trim()} TrxID: ${trxId.trim().toUpperCase()} (${paymentMethod}) দিয়ে ${newOrder.id} অর্ডার জমা দিয়েছেন।`,
-      'নতুন অর্ডার'
+      'Order & TrxID Submitted',
+      `Customer ${fullName.trim()} submitted order ${newOrder.id} with TrxID: ${trxId.trim().toUpperCase()} (${paymentMethod}).`,
+      'New Order',
+      'order_submit',
+      'Checkout Form Submission'
     );
 
     // Capture location asynchronously in background so submit never hangs

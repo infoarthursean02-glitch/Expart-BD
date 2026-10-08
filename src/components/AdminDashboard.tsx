@@ -45,7 +45,8 @@ import {
   ChevronRight,
   PlayCircle,
   Phone,
-  ShieldAlert
+  ShieldAlert,
+  TrendingUp
 } from 'lucide-react';
 import { 
   OrderRecord, 
@@ -84,6 +85,7 @@ import {
   markSessionAsReadByAdmin 
 } from '../utils/chatStorage';
 import { getVisitors, getActivities, syncVisitorsWithBackend, syncActivitiesWithBackend } from '../utils/activityTracker';
+import { TrafficAnalyticsReport } from './TrafficAnalyticsReport';
 
 interface AdminDashboardProps {
   onBackToWeb: () => void;
@@ -100,7 +102,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
   const [loginError, setLoginError] = useState(false);
 
   // Navigation Tab State
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'pending' | 'add_order' | 'chats' | 'faqs' | 'features' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'traffic' | 'orders' | 'pending' | 'add_order' | 'chats' | 'faqs' | 'features' | 'settings'>('dashboard');
 
   // Orders & Settings State
   const [orders, setOrders] = useState<OrderRecord[]>([]);
@@ -160,8 +162,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
   const [editingFeatureId, setEditingFeatureId] = useState<string | null>(null);
   const [featureForm, setFeatureForm] = useState({ text: '', bn: '' });
 
-  // Folder-by-folder Sub-view inside "সকল অর্ডার ও TrxID তালিকা"
-  const [orderFolderView, setOrderFolderView] = useState<'orders' | 'visitors' | 'activities' | 'services'>('orders');
+  // Folder-by-folder Sub-view inside "All Orders & Transactions List"
+  const [orderFolderView, setOrderFolderView] = useState<'orders' | 'traffic' | 'visitors' | 'activities' | 'services'>('orders');
 
   // Pending Tab Sub-filter ('pending' = awaiting verification, 'verified' = approved, 'accepted' = in_progress, 'all' = all)
   const [pendingSubTab, setPendingSubTab] = useState<'pending' | 'verified' | 'accepted' | 'all'>('pending');
@@ -193,15 +195,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
     if (type === 'order') {
       setOrders((prev) => prev.filter((o) => o.id !== id));
       deleteOrder(id);
-      showToast('অর্ডারটি স্থায়ীভাবে মুছে ফেলা হয়েছে');
+      showToast('Order permanently deleted');
     } else if (type === 'feature') {
       setFeaturesState((prev) => prev.filter((f) => f.id !== id));
       deletePackageFeature(id);
-      showToast('সার্ভিস ফিচারটি স্থায়ীভাবে মুছে ফেলা হয়েছে');
+      showToast('Service feature permanently deleted');
     } else if (type === 'faq') {
       setFaqsState((prev) => prev.filter((f) => f.id !== id));
       deleteFaq(id);
-      showToast('FAQ প্রশ্নটি মুছে ফেলা হয়েছে');
+      showToast('FAQ item deleted');
     }
     setDeleteConfirmItem(null);
   };
@@ -225,21 +227,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
   };
 
   const handleApproveOrder = (id: string) => {
-    updateOrderStatus(id, 'verified', 'পেমেন্ট ও TrxID অনুমোদিত (Approved)');
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: 'verified', adminNote: 'পেমেন্ট ও TrxID অনুমোদিত (Approved)' } : o)));
-    showToast(`অর্ডার ${id} সফলভাবে Approved (অনুমোদিত) হয়েছে!`);
+    updateOrderStatus(id, 'verified', 'Payment & TrxID Approved');
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: 'verified', adminNote: 'Payment & TrxID Approved' } : o)));
+    showToast(`Order ${id} approved successfully!`);
   };
 
   const handleAcceptOrder = (id: string) => {
-    updateOrderStatus(id, 'in_progress', 'অর্ডার গৃহীত ও কাজ চলমান (Accepted)');
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: 'in_progress', adminNote: 'অর্ডার গৃহীত ও কাজ চলমান (Accepted)' } : o)));
-    showToast(`অর্ডার ${id} সফলভাবে Accept করে প্রসেসিংয়ে নেওয়া হয়েছে!`);
+    updateOrderStatus(id, 'in_progress', 'Order accepted & in progress');
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: 'in_progress', adminNote: 'Order accepted & in progress' } : o)));
+    showToast(`Order ${id} accepted and moved to in-progress!`);
   };
 
   const handleRejectOrder = (id: string) => {
-    updateOrderStatus(id, 'rejected', 'ভুল বা অমিল TrxID (Rejected)');
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: 'rejected', adminNote: 'ভুল বা অমিল TrxID (Rejected)' } : o)));
-    showToast(`অর্ডার ${id} বাতিল (Rejected) করা হয়েছে!`);
+    updateOrderStatus(id, 'rejected', 'Invalid or mismatched TrxID (Rejected)');
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: 'rejected', adminNote: 'Invalid or mismatched TrxID (Rejected)' } : o)));
+    showToast(`Order ${id} rejected!`);
   };
 
   useEffect(() => {
@@ -367,7 +369,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
     setDeleteConfirmItem({
       type: 'order',
       id,
-      title: title || (ord?.fullName ? `${ord.fullName} (অর্ডার ${id})` : `অর্ডার ${id}`),
+      title: title || (ord?.fullName ? `${ord.fullName} (Order ${id})` : `Order ${id}`),
     });
   };
 
@@ -388,7 +390,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
   const handleManualOrderSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!manualForm.fullName || !manualForm.phoneNumber || !manualForm.pageUrl || !manualForm.trxId) {
-      alert('অনুগ্রহ করে নাম, ফোন, পেজ লিংক ও TrxID পূরণ করুন।');
+      alert('Please fill in Full Name, Phone, Page Link, and TrxID.');
       return;
     }
 
@@ -403,9 +405,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
       trxId: manualForm.trxId.trim().toUpperCase(),
       amount: Number(manualForm.amount) || 2999,
       status: 'verified',
-      createdAt: `আজ, ${new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })}`,
-      notes: manualForm.notes.trim() || 'ম্যানুয়ালি যুক্ত করা হয়েছে',
-      adminNote: 'অ্যাডমিন দ্বারা সরাসরি ভেরিফাইকৃত',
+      createdAt: `Today, ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`,
+      notes: manualForm.notes.trim() || 'Manually added by admin',
+      adminNote: 'Directly verified by admin',
     };
 
     saveOrder(newOrd);
@@ -420,7 +422,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
       notes: '',
     });
     setActiveTab('orders');
-    alert(`অর্ডার ${newOrd.id} সফলভাবে যুক্ত হয়েছে!`);
+    alert(`Order ${newOrd.id} added successfully!`);
   };
 
   // FAQ Handlers
@@ -458,7 +460,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
     setDeleteConfirmItem({
       type: 'faq',
       id,
-      title: title || faq?.question || 'FAQ প্রশ্ন',
+      title: title || faq?.question || 'FAQ Question',
     });
   };
 
@@ -480,7 +482,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
 
     if (editingFeatureId) {
       updatePackageFeature(editingFeatureId, { text: featureForm.text, bn: featureForm.bn });
-      showToast('সার্ভিস ফিচার সফলভাবে আপডেট করা হয়েছে');
+      showToast('Service feature updated successfully');
     } else {
       const newFeat: PackageFeatureItem = {
         id: `feat-${Date.now()}`,
@@ -488,7 +490,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
         bn: featureForm.bn.trim(),
       };
       savePackageFeature(newFeat);
-      showToast('নতুন সার্ভিস ফিচার সফলভাবে যুক্ত হয়েছে');
+      showToast('New service feature added successfully');
     }
     setFeatureModalOpen(false);
     loadData();
@@ -499,7 +501,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
     setDeleteConfirmItem({
       type: 'feature',
       id,
-      title: title || feat?.bn || feat?.text || 'সার্ভিস ফিচার',
+      title: title || feat?.text || feat?.bn || 'Service Feature',
     });
   };
 
@@ -538,7 +540,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
             <ExpartBDLogo variant="full" iconClassName="w-16 h-16" className="justify-center" />
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold mt-2">
               <Lock className="w-3.5 h-3.5 text-orange-600" />
-              <span>অ্যাডমিন কন্ট্রোল প্যানেল লগইন</span>
+              <span>Admin Control Panel Login</span>
             </div>
           </div>
 
@@ -547,7 +549,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
             {/* User Name input */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700 block">
-                User Name (ইউজারনেম)
+                Username
               </label>
               <div className="relative">
                 <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -559,7 +561,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     setUsernameInput(e.target.value);
                     setLoginError(false);
                   }}
-                  placeholder="ইউজারনেম লিখুন"
+                  placeholder="Enter username"
                   autoFocus
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm shadow-xs"
                 />
@@ -569,7 +571,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
             {/* Password input */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700 block">
-                Password (পাসওয়ার্ড)
+                Password
               </label>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -581,7 +583,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     setPasswordInput(e.target.value);
                     setLoginError(false);
                   }}
-                  placeholder="পাসওয়ার্ড লিখুন"
+                  placeholder="Enter password"
                   className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm font-mono shadow-xs"
                 />
                 <button
@@ -598,7 +600,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
             {/* Error Message */}
             {loginError && (
               <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
-                ভুল ইউজারনেম বা পাসওয়ার্ড! অনুগ্রহ করে সঠিক তথ্য দিন।
+                Invalid username or password! Please check your credentials.
               </div>
             )}
 
@@ -607,7 +609,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
               type="submit"
               className="w-full py-3.5 rounded-xl bg-gradient-to-r from-orange-600 to-rose-600 hover:from-orange-500 hover:to-rose-500 text-white font-extrabold text-sm shadow-md shadow-orange-600/25 transition-all cursor-pointer"
             >
-              লগইন করুন (Enter Dashboard)
+              Sign In (Enter Dashboard)
             </button>
 
             <div className="pt-1 text-center">
@@ -616,7 +618,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                 onClick={onBackToWeb}
                 className="text-slate-500 hover:text-slate-900 text-xs cursor-pointer"
               >
-                ← ক্লায়েন্ট ওয়েবসাইটে ফিরুন
+                ← Return to Website
               </button>
             </div>
           </form>
@@ -636,19 +638,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight">
-                Expart <span className="text-orange-600">BD</span> — কন্ট্রোল প্যানেল
+                Expart <span className="text-orange-600">BD</span> — Control Panel
               </h1>
               <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                রুট: /admin
+                Route: /admin
               </span>
               <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 text-[10px] font-bold hidden md:flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                <span>৩ সেকেন্ড লাইভ সিঙ্ক</span>
+                <span>3s Live Sync</span>
               </span>
             </div>
             <p className="text-[11px] text-slate-500 hidden sm:block">
-              অফিশিয়াল পেমেন্ট নম্বর (বিকাশ ও নগদ পার্সোনাল): <strong className="text-slate-900 font-mono">{settings.paymentNumber}</strong> · প্যাকেজ ফি: <strong>৳{settings.packagePrice}</strong>
+              Official Payment Number (bKash & Nagad Personal): <strong className="text-slate-900 font-mono">{settings.paymentNumber}</strong> · Package Fee: <strong>৳{settings.packagePrice}</strong>
             </p>
           </div>
         </div>
@@ -659,14 +661,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
             type="button"
             onClick={() => {
               loadData();
-              showToast('৩ সেকেন্ড লাইভ সিঙ্ক সম্পন্ন — সকল ডাটা আপ-টু-ডেট!');
+              showToast('Live Sync Complete — all data is up to date!');
             }}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold transition-all cursor-pointer shadow-2xs active:scale-95"
-            title="৩ সেকেন্ড লাইভ সিঙ্ক সক্রিয়। সাথে সাথে নতুন অর্ডার ও ডাটা রিফ্রেশ করতে চাপুন।"
+            title="3-second live sync active. Click to refresh instantly."
           >
             <RefreshCw className="w-3.5 h-3.5 text-emerald-600 animate-spin" style={{ animationDuration: '4s' }} />
-            <span className="hidden sm:inline">৩ সে. লাইভ সিঙ্ক</span>
-            <span className="sm:hidden">সিঙ্ক</span>
+            <span className="hidden sm:inline">Live Sync</span>
+            <span className="sm:hidden">Sync</span>
           </button>
 
           <button
@@ -676,7 +678,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
             title="Download submitted orders list as a CSV file for bookkeeping"
           >
             <Download className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">অর্ডার CSV ডাউনলোড</span>
+            <span className="hidden md:inline">Export CSV</span>
             <span className="md:hidden">CSV</span>
             <span className="px-1.5 py-0.5 rounded-md bg-white/20 text-[10px] font-mono">
               {orders.length}
@@ -689,14 +691,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
             className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5 text-orange-600" />
-            <span>ওয়েবসাইটে ফিরুন</span>
+            <span>View Website</span>
           </button>
 
           <button
             type="button"
             onClick={handleLogout}
             className="p-2 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 transition-colors cursor-pointer"
-            title="লগআউট করুন"
+            title="Logout"
           >
             <LogOut className="w-4 h-4" />
           </button>
@@ -709,7 +711,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
         {/* Sidebar */}
         <aside className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-slate-200 p-4 space-y-2 shrink-0">
           <div className="text-[10px] uppercase font-bold text-orange-600 tracking-wider px-3 mb-2">
-            প্রধান মেনু
+            MAIN MENU
           </div>
 
           <button
@@ -723,7 +725,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
           >
             <div className="flex items-center gap-2.5">
               <LayoutDashboard className="w-4 h-4" />
-              <span>ড্যাশবোর্ড ওভারভিউ</span>
+              <span>Dashboard Overview</span>
             </div>
           </button>
 
@@ -738,13 +740,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
           >
             <div className="flex items-center gap-2.5">
               <Clock className="w-4 h-4 text-amber-500" />
-              <span>পেন্ডিং ভেরিফিকেশন</span>
+              <span>Pending Verification</span>
             </div>
             {pendingOrders.length > 0 && (
               <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-black animate-pulse">
                 {pendingOrders.length}
               </span>
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('traffic')}
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              activeTab === 'traffic'
+                ? 'bg-gradient-to-r from-orange-600 to-rose-600 text-white shadow-md shadow-orange-600/25'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <TrendingUp className="w-4 h-4 text-cyan-500" />
+              <span>Real-Time Traffic Report</span>
+            </div>
+            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-cyan-100 text-cyan-800 text-[10px] font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Live
+            </span>
           </button>
 
           <button
@@ -758,7 +779,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
           >
             <div className="flex items-center gap-2.5">
               <ShoppingBag className="w-4 h-4" />
-              <span>সকল অর্ডার তালিকা</span>
+              <span>All Orders List</span>
             </div>
             <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-mono">
               {orders.length}
@@ -776,7 +797,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
           >
             <div className="flex items-center gap-2.5">
               <PlusCircle className="w-4 h-4 text-emerald-600" />
-              <span>ম্যানুয়াল অর্ডার এন্ট্রি</span>
+              <span>Manual Order Entry</span>
             </div>
           </button>
 
@@ -791,7 +812,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
           >
             <div className="flex items-center gap-2.5">
               <MessageSquare className="w-4 h-4 text-emerald-500" />
-              <span>লাইভ চ্যাট ও প্রশ্ন-উত্তর</span>
+              <span>Live Chat & Q&A</span>
             </div>
             <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-mono font-bold">
               {chatSessions.length}
@@ -799,7 +820,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
           </button>
 
           <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider px-3 pt-3 mb-1">
-            কনটেন্ট ম্যানেজমেন্ট (CMS)
+            CONTENT MANAGEMENT (CMS)
           </div>
 
           <button
@@ -813,7 +834,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
           >
             <div className="flex items-center gap-2.5">
               <HelpCircle className="w-4 h-4 text-orange-500" />
-              <span>প্রশ্ন-উত্তর (FAQ) এডিটর</span>
+              <span>FAQ Manager</span>
             </div>
             <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-mono">
               {faqs.length}
@@ -831,7 +852,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
           >
             <div className="flex items-center gap-2.5">
               <ListPlus className="w-4 h-4 text-indigo-500" />
-              <span>প্যাকেজ ফিচার তালিকা</span>
+              <span>Package Features</span>
             </div>
             <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-mono">
               {features.length}
@@ -849,7 +870,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
           >
             <div className="flex items-center gap-2.5">
               <Settings className="w-4 h-4" />
-              <span>পেমেন্ট, ব্যানার ও সেটিংস</span>
+              <span>Payment & Settings</span>
             </div>
           </button>
 
@@ -858,10 +879,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
             <div className="p-3.5 rounded-2xl bg-orange-50/60 border border-orange-200/80 space-y-2 text-xs">
               <div className="font-bold text-slate-900 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-orange-600" />
-                <span>সিস্টেম লাইভ: Vercel Ready</span>
+                <span>System Status: Cloud Ready</span>
               </div>
               <p className="text-[11px] text-slate-600">
-                যেকোনো পরিবর্তন সাথে সাথে লোকালস্টোরেজে সিঙ্ক হয়ে লাইভ ওয়েবসাইটে প্রতিফলিত হয়।
+                All changes sync with the live website in real-time.
               </p>
               <button
                 type="button"
@@ -869,7 +890,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                 className="w-full mt-1 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-orange-700 text-[11px] font-bold border border-orange-200 flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
               >
                 <Download className="w-3 h-3" />
-                <span>অর্ডার এক্সপোর্ট (CSV)</span>
+                <span>Export Orders (CSV)</span>
               </button>
             </div>
           </div>
@@ -886,10 +907,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <h2 className="text-xl sm:text-2xl font-black text-slate-900">
-                    ড্যাশবোর্ড ওভারভিউ
+                    Dashboard Overview
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-500">
-                    ফেসবুক কনটেন্ট মনিটাইজেশন অর্ডারের সামগ্রিক পরিস্থিতি ও TrxID সামারি
+                    Overview of Facebook Content Monetization orders and TrxID summary
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -900,7 +921,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     title="Download list of submitted orders as CSV for bookkeeping"
                   >
                     <Download className="w-3.5 h-3.5 text-orange-600" />
-                    <span>বুককিপিং CSV ডাউনলোড</span>
+                    <span>Download CSV</span>
                   </button>
 
                   <button
@@ -909,7 +930,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-200 flex items-center gap-1.5 cursor-pointer shadow-xs"
                   >
                     <RefreshCw className="w-3.5 h-3.5 text-orange-600" />
-                    <span>তথ্য রিফ্রেশ করুন</span>
+                    <span>Refresh Data</span>
                   </button>
                 </div>
               </div>
@@ -918,42 +939,79 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-2">
                   <div className="flex items-center justify-between text-slate-500 text-xs font-semibold">
-                    <span>মোট অর্ডার</span>
+                    <span>Total Orders</span>
                     <ShoppingBag className="w-4 h-4 text-orange-600" />
                   </div>
-                  <div className="text-3xl font-black text-slate-900">{orders.length} টি</div>
-                  <div className="text-[11px] text-slate-500">ওয়েবসাইট ও ম্যানুয়াল মিলিয়ে</div>
+                  <div className="text-3xl font-black text-slate-900">{orders.length}</div>
+                  <div className="text-[11px] text-slate-500">Combined web & manual orders</div>
                 </div>
 
                 <div className="p-5 rounded-3xl bg-white border border-amber-200 shadow-sm space-y-2">
                   <div className="flex items-center justify-between text-amber-700 text-xs font-semibold">
                     <span className="flex items-center gap-1">
                       <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
-                      ভেরিফিকেশনে আছে
+                      Awaiting Verification
                     </span>
                     <Clock className="w-4 h-4 text-amber-600" />
                   </div>
-                  <div className="text-3xl font-black text-amber-600">{pendingOrders.length} টি</div>
-                  <div className="text-[11px] text-amber-700/80">TrxID যাচাইয়ের অপেক্ষায়</div>
+                  <div className="text-3xl font-black text-amber-600">{pendingOrders.length}</div>
+                  <div className="text-[11px] text-amber-700/80">Awaiting TrxID check</div>
                 </div>
 
                 <div className="p-5 rounded-3xl bg-white border border-blue-200 shadow-sm space-y-2">
                   <div className="flex items-center justify-between text-blue-700 text-xs font-semibold">
-                    <span>ভেরিফাইড ও প্রসেসিং</span>
+                    <span>Verified & In Progress</span>
                     <CheckCircle2 className="w-4 h-4 text-blue-600" />
                   </div>
-                  <div className="text-3xl font-black text-blue-600">{verifiedOrders.length + inProgressOrders.length} টি</div>
-                  <div className="text-[11px] text-slate-500">কাজ চলমান রয়েছে</div>
+                  <div className="text-3xl font-black text-blue-600">{verifiedOrders.length + inProgressOrders.length}</div>
+                  <div className="text-[11px] text-slate-500">Active orders in progress</div>
                 </div>
 
                 <div className="p-5 rounded-3xl bg-white border border-emerald-200 shadow-sm space-y-2">
                   <div className="flex items-center justify-between text-emerald-700 text-xs font-semibold">
-                    <span>মোট আয় / ভলিউম</span>
+                    <span>Total Revenue</span>
                     <DollarSign className="w-4 h-4 text-emerald-600" />
                   </div>
                   <div className="text-3xl font-black text-emerald-600">৳{totalRevenue.toLocaleString()}</div>
-                  <div className="text-[11px] text-slate-500">@ ৳{settings.packagePrice} প্রতি প্যাকেজ</div>
+                  <div className="text-[11px] text-slate-500">@ ৳{settings.packagePrice} per package</div>
                 </div>
+              </div>
+
+              {/* Real-Time Traffic & Visitors Live Highlight */}
+              <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-md flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-11 h-11 rounded-2xl bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center text-cyan-400 shrink-0">
+                    <TrendingUp className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm text-white">Live Website Traffic & CTA Clicks</span>
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        Live Sync
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-300 mt-1 flex flex-wrap items-center gap-1 sm:gap-2">
+                      <span className="text-emerald-400 font-bold">{visitors.filter((v) => v.isOnline).length} Active Online</span>
+                      <span className="text-slate-600">·</span>
+                      <span>{visitors.length} Total Visitors</span>
+                      <span className="text-slate-600">·</span>
+                      <span className="text-orange-400 font-bold">{activities.filter((a) => a.eventType === 'order_now_click' || a.category === 'click').length} "Order Now" Clicks</span>
+                      <span className="text-slate-600">·</span>
+                      <span>{activities.length} Total Activities</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('traffic')}
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+                >
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  <span>Open Full Traffic Report</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
               </div>
 
               {/* Payment Split & Actionable Pending Banner */}
@@ -965,21 +1023,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     <div className="flex items-center gap-2">
                       <Clock className="w-5 h-5 text-amber-600" />
                       <h3 className="text-base font-bold text-slate-900">
-                        সরাসরি ভেরিফিকেশন কিউ (Pending TrxID Queue)
+                        Pending Verification Queue (Action Required)
                       </h3>
                     </div>
                     <button
                       onClick={() => setActiveTab('pending')}
                       className="text-xs text-orange-600 hover:underline font-bold cursor-pointer"
                     >
-                      সবগুলো দেখুন ({pendingOrders.length})
+                      View All ({pendingOrders.length})
                     </button>
                   </div>
 
                   {pendingOrders.length === 0 ? (
                     <div className="text-center py-8 text-slate-500 text-xs bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
                       <CheckCircle2 className="w-6 h-6 text-emerald-600 mx-auto" />
-                      <p>কোনো পেন্ডিং অর্ডার নেই! সব TrxID ভেরিফাইড।</p>
+                      <p>No pending orders! All TrxIDs are verified.</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -996,10 +1054,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                                 type="button"
                                 onClick={() => setSelectedOrderForDetails(ord)}
                                 className="px-2 py-0.5 rounded-md bg-orange-100 hover:bg-orange-200 text-orange-700 transition-colors flex items-center gap-1 text-[11px] font-bold cursor-pointer"
-                                title="অর্ডারের সকল বিস্তারিত ও লাইভ লোকেশন দেখুন"
+                                title="View full order details and live location"
                               >
                                 <Eye className="w-3.5 h-3.5 text-orange-600" />
-                                <span>বিস্তারিত ও লোকেশন</span>
+                                <span>Details & Location</span>
                               </button>
                               <span className="text-slate-400">·</span>
                               <span className="font-mono text-slate-600">{ord.phoneNumber}</span>
@@ -1017,16 +1075,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                               type="button"
                               onClick={() => handleCopyTrx(ord.trxId)}
                               className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-mono cursor-pointer shadow-2xs"
-                              title="কপি TrxID"
+                              title="Copy TrxID"
                             >
-                              {copiedTrxId === ord.trxId ? 'Copied' : 'কপি TrxID'}
+                              {copiedTrxId === ord.trxId ? 'Copied' : 'Copy TrxID'}
                             </button>
                             <button
                               type="button"
                               onClick={() => handleStatusChange(ord.id, 'verified')}
                               className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs cursor-pointer"
                             >
-                              ✓ ভেরিফাই করুন
+                              ✓ Approve Payment
                             </button>
                           </div>
                         </div>
@@ -1040,14 +1098,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                   <div className="space-y-3">
                     <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                       <CreditCard className="w-5 h-5 text-orange-600" />
-                      <span>পেমেন্ট মাধ্যম অনুপাত</span>
+                      <span>Payment Method Ratio</span>
                     </h3>
 
                     <div className="space-y-3 text-xs">
                       <div>
                         <div className="flex justify-between pb-1 text-slate-600">
-                          <span>বিকাশ (bKash)</span>
-                          <span className="font-bold font-mono text-pink-600">{bkashCount} টি</span>
+                          <span>bKash</span>
+                          <span className="font-bold font-mono text-pink-600">{bkashCount}</span>
                         </div>
                         <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
                           <div
@@ -1059,8 +1117,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
 
                       <div>
                         <div className="flex justify-between pb-1 text-slate-600">
-                          <span>নগদ (Nagad)</span>
-                          <span className="font-bold font-mono text-orange-600">{nagadCount} টি</span>
+                          <span>Nagad</span>
+                          <span className="font-bold font-mono text-orange-600">{nagadCount}</span>
                         </div>
                         <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
                           <div
@@ -1073,18 +1131,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                   </div>
 
                   <div className="p-3.5 rounded-2xl bg-orange-50/50 border border-orange-200 space-y-1 text-xs">
-                    <div className="text-[10px] text-slate-500 uppercase font-mono">পেমেন্ট রিসিভার নম্বর (বিকাশ ও নগদ পার্সোনাল)</div>
+                    <div className="text-[10px] text-slate-500 uppercase font-mono">PAYMENT RECEIVER NUMBER (BKASH & NAGAD PERSONAL)</div>
                     <div className="font-mono text-base font-bold text-slate-900">
                       {settings.paymentNumber.startsWith('+88') ? settings.paymentNumber : `+88${settings.paymentNumber}`}
                     </div>
                     <p className="text-[11px] text-slate-600">
-                      গ্রাহকরা বিকাশ ও নগদে এই পার্সোনাল নম্বরে Send Money করছেন।
+                      Customers send money to this official personal number via bKash / Nagad.
                     </p>
                   </div>
                 </div>
 
               </div>
 
+            </div>
+          )}
+
+          {/* TAB: REAL-TIME TRAFFIC & VISITOR REPORT */}
+          {activeTab === 'traffic' && (
+            <div className="space-y-6">
+              <TrafficAnalyticsReport
+                visitors={visitors}
+                activities={activities}
+                orders={orders}
+                onRefresh={loadData}
+              />
             </div>
           )}
 
@@ -1096,10 +1166,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <h2 className="text-xl sm:text-2xl font-black text-slate-900">
-                    সকল অর্ডার ও TrxID তালিকা
+                    All Orders & TrxID List
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-500">
-                    যেকোনো অর্ডারের TrxID যাচাই করুন, স্ট্যাটাস আপডেট করুন এবং নোট সংরক্ষণ করুন
+                    Verify transaction IDs, update statuses, view customer location and manage notes
                   </p>
                 </div>
 
@@ -1110,7 +1180,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     className="px-3.5 py-2 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-bold border border-orange-200 flex items-center gap-1.5 cursor-pointer shadow-2xs"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    <span>CSV ডাউনলোড</span>
+                    <span>Download CSV</span>
                   </button>
                   <button
                     type="button"
@@ -1118,7 +1188,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-orange-600 to-rose-600 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md shadow-orange-600/20"
                   >
                     <PlusCircle className="w-3.5 h-3.5" />
-                    <span>নতুন অর্ডার</span>
+                    <span>New Order</span>
                   </button>
                 </div>
               </div>
@@ -1135,11 +1205,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                   }`}
                 >
                   <FolderOpen className={`w-4 h-4 ${orderFolderView === 'orders' ? 'text-orange-600' : 'text-slate-400'}`} />
-                  <span>📁 অর্ডার ও TrxID তালিকা</span>
+                  <span>📁 Orders & TrxID List</span>
                   <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
                     orderFolderView === 'orders' ? 'bg-orange-100 text-orange-800' : 'bg-slate-200 text-slate-700'
                   }`}>
                     {orders.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setOrderFolderView('traffic')}
+                  className={`flex-1 sm:flex-none px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    orderFolderView === 'traffic'
+                      ? 'bg-white text-cyan-700 shadow-md border border-cyan-200'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                  }`}
+                >
+                  <TrendingUp className={`w-4 h-4 ${orderFolderView === 'traffic' ? 'text-cyan-600' : 'text-slate-400'}`} />
+                  <span>📊 Real-Time Traffic Report</span>
+                  <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Live
                   </span>
                 </button>
 
@@ -1153,7 +1240,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                   }`}
                 >
                   <Users className={`w-4 h-4 ${orderFolderView === 'visitors' ? 'text-blue-600' : 'text-slate-400'}`} />
-                  <span>📁 ওয়েব ভিজিটর ডাটা</span>
+                  <span>📁 Web Visitors Data</span>
                   <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
                     orderFolderView === 'visitors' ? 'bg-blue-100 text-blue-800' : 'bg-slate-200 text-slate-700'
                   }`}>
@@ -1171,7 +1258,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                   }`}
                 >
                   <Activity className={`w-4 h-4 ${orderFolderView === 'activities' ? 'text-purple-600' : 'text-slate-400'}`} />
-                  <span>📁 অ্যাক্টিভিটি টাইমলাইন</span>
+                  <span>📁 Activity Timeline</span>
                   <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
                     orderFolderView === 'activities' ? 'bg-purple-100 text-purple-800' : 'bg-slate-200 text-slate-700'
                   }`}>
@@ -1189,7 +1276,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                   }`}
                 >
                   <ShoppingBag className={`w-4 h-4 ${orderFolderView === 'services' ? 'text-emerald-600' : 'text-slate-400'}`} />
-                  <span>📁 সার্ভিস প্যাকেজ ও ফিচার</span>
+                  <span>📁 Services & Features</span>
                   <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
                     orderFolderView === 'services' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'
                   }`}>
@@ -1209,7 +1296,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="TrxID, গ্রাহকের নাম, ফোন নম্বর বা Order ID দিয়ে খুঁজুন..."
+                    placeholder="Search by TrxID, Customer Name, Phone, or Order ID..."
                     className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-orange-500"
                   />
                 </div>
@@ -1224,7 +1311,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
-                    সব ({orders.length})
+                    All ({orders.length})
                   </button>
                   <button
                     type="button"
@@ -1235,7 +1322,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
-                    ভেরিফিকেশনে ({pendingOrders.length})
+                    Pending ({pendingOrders.length})
                   </button>
                   <button
                     type="button"
@@ -1246,7 +1333,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
-                    ভেরিফাইড ({verifiedOrders.length})
+                    Approved ({verifiedOrders.length})
                   </button>
                   <button
                     type="button"
@@ -1257,7 +1344,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
-                    সম্পন্ন ({completedOrders.length})
+                    Completed ({completedOrders.length})
                   </button>
                 </div>
               </div>
@@ -1267,7 +1354,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                 {filteredOrders.length === 0 ? (
                   <div className="text-center py-16 bg-white rounded-3xl border border-slate-200 space-y-2">
                     <AlertCircle className="w-8 h-8 text-slate-400 mx-auto" />
-                    <p className="text-sm text-slate-500">কোনো অর্ডার পাওয়া যায়নি।</p>
+                    <p className="text-sm text-slate-500">No orders found.</p>
                   </div>
                 ) : (
                   filteredOrders.map((order) => (
@@ -1298,30 +1385,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                           {order.status === 'checking' && (
                             <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1.5">
                               <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
-                              অটোমেটিক ভেরিফিকেশন চলছে
+                              Pending Verification
                             </span>
                           )}
                           {order.status === 'verified' && (
                             <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1.5">
                               <CheckCircle2 className="w-3.5 h-3.5" />
-                              পেমেন্ট ভেরিফাইড
+                              Payment Approved
                             </span>
                           )}
                           {order.status === 'in_progress' && (
                             <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1.5">
                               <Clock className="w-3.5 h-3.5" />
-                              সার্ভিসিং প্রসেস চলছে
+                              In Progress / Accepted
                             </span>
                           )}
                           {order.status === 'completed' && (
                             <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
                               <CheckCircle2 className="w-3.5 h-3.5" />
-                              সেটআপ সম্পন্ন
+                              Completed
                             </span>
                           )}
                           {order.status === 'rejected' && (
                             <span className="px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                              বাতিল করা হয়েছে
+                              Rejected
                             </span>
                           )}
                         </div>
@@ -1329,24 +1416,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                         <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-                          <span className="text-[10px] uppercase font-mono text-slate-500 block">গ্রাহকের নাম ও ফোন</span>
+                          <span className="text-[10px] uppercase font-mono text-slate-500 block">Customer Name & Phone</span>
                           <div className="flex items-center gap-2">
                             <div className="font-bold text-slate-900 text-sm">{order.fullName}</div>
                             <button
                               type="button"
                               onClick={() => setSelectedOrderForDetails(order)}
                               className="px-2 py-0.5 rounded-lg bg-orange-100 hover:bg-orange-200 text-orange-700 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                              title="অর্ডারের সকল বিস্তারিত ও ক্লায়েন্টের লাইভ লোকেশন দেখুন"
+                              title="View full order details and client live location"
                             >
                               <Eye className="w-3.5 h-3.5 text-orange-600" />
-                              <span>বিস্তারিত ও লোকেশন</span>
+                              <span>Details & Location</span>
                             </button>
                           </div>
                           <div className="font-mono text-slate-600 font-semibold">{order.phoneNumber}</div>
                         </div>
 
                         <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-                          <span className="text-[10px] uppercase font-mono text-slate-500 block">ফেসবুক পেজ লিংক</span>
+                          <span className="text-[10px] uppercase font-mono text-slate-500 block">Facebook Page URL</span>
                           <a
                             href={order.pageUrl}
                             target="_blank"
@@ -1361,41 +1448,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
 
                         <div className="p-3 rounded-2xl bg-orange-50/40 border border-orange-200 space-y-1.5">
                           <div className="flex items-center justify-between">
-                            <span className="text-[10px] uppercase font-mono text-slate-500">TrxID কোড:</span>
+                            <span className="text-[10px] uppercase font-mono text-slate-500">TrxID Code:</span>
                             <button
                               type="button"
                               onClick={() => handleCopyTrx(order.trxId)}
                               className="px-2 py-0.5 rounded bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-[10px] font-bold flex items-center gap-1 cursor-pointer shadow-2xs"
                             >
                               {copiedTrxId === order.trxId ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                              <span>{copiedTrxId === order.trxId ? 'কপিকৃত' : 'কপি'}</span>
+                              <span>{copiedTrxId === order.trxId ? 'Copied' : 'Copy'}</span>
                             </button>
                           </div>
                           <div className="font-mono text-sm font-black text-slate-900 tracking-wider">
                             {order.trxId}
                           </div>
                           <div className="text-[10px] text-slate-500 truncate">
-                            প্রেরক নম্বর: {order.senderNumber}
+                            Sender: {order.senderNumber}
                           </div>
                         </div>
 
                         <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-                          <span className="text-[10px] uppercase font-mono text-slate-500 block">গ্রাহকের নোট</span>
+                          <span className="text-[10px] uppercase font-mono text-slate-500 block">Customer Notes</span>
                           <p className="text-slate-600 line-clamp-2">
-                            {order.notes || 'কোনো অতিরিক্ত নোট নেই।'}
+                            {order.notes || 'No additional notes.'}
                           </p>
                         </div>
                       </div>
 
                       {order.adminNote && (
                         <div className="p-2.5 rounded-xl bg-orange-50 border border-orange-200 text-xs text-orange-950">
-                          <strong className="text-orange-700">অ্যাডমিন নোট: </strong> {order.adminNote}
+                          <strong className="text-orange-700">Admin Note: </strong> {order.adminNote}
                         </div>
                       )}
 
                       <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="text-[11px] text-slate-500 mr-1">স্ট্যাটাস:</span>
+                          <span className="text-[11px] text-slate-500 mr-1">Status:</span>
 
                           <button
                             type="button"
@@ -1406,7 +1493,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                                 : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'
                             }`}
                           >
-                            ✓ ভেরিফাই
+                            ✓ Approve
                           </button>
 
                           <button
@@ -1418,7 +1505,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                                 : 'bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200'
                             }`}
                           >
-                            ⚙️ প্রসেসিং
+                            ⚙️ In Progress
                           </button>
 
                           <button
@@ -1430,7 +1517,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                                 : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
                             }`}
                           >
-                            🎉 সম্পন্ন
+                            🎉 Complete
                           </button>
 
                           <button
@@ -1442,7 +1529,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                                 : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
                             }`}
                           >
-                            বাতিল
+                            ✕ Reject
                           </button>
                         </div>
 
@@ -1453,7 +1540,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                             className="px-2.5 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
                           >
                             <Eye className="w-3.5 h-3.5" />
-                            <span>পূর্ণ বিবরণ ও লোকেশন</span>
+                            <span>Full Details & Location</span>
                           </button>
 
                           <button
@@ -1462,7 +1549,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                             className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1 cursor-pointer border border-slate-200"
                           >
                             <FileText className="w-3.5 h-3.5" />
-                            <span>রসিদ</span>
+                            <span>Receipt</span>
                           </button>
 
                           <button
@@ -1473,14 +1560,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                             }}
                             className="px-2.5 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-semibold cursor-pointer border border-orange-200"
                           >
-                            {order.adminNote ? 'নোট এডিট' : '+ নোট যুক্ত'}
+                            {order.adminNote ? 'Edit Note' : '+ Add Note'}
                           </button>
 
                           <button
                             type="button"
                             onClick={() => handleDelete(order.id)}
                             className="p-1.5 rounded-xl text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer"
-                            title="মুছে ফেলুন"
+                            title="Delete permanently"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -1493,7 +1580,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                             type="text"
                             value={noteInput}
                             onChange={(e) => setNoteInput(e.target.value)}
-                            placeholder="অ্যাডমিন নোট লিখুন (যেমন: পেজ অডিট শুরু হয়েছে)..."
+                            placeholder="Enter admin note (e.g., Page audit started)..."
                             className="flex-1 px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-orange-500"
                           />
                           <button
@@ -1501,14 +1588,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                             onClick={() => handleSaveNote(order.id)}
                             className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold cursor-pointer"
                           >
-                            সংরক্ষণ
+                            Save
                           </button>
                           <button
                             type="button"
                             onClick={() => setEditingNoteId(null)}
                             className="px-3 py-2 text-xs text-slate-500 hover:text-slate-800 cursor-pointer"
                           >
-                            বাতিল
+                            ✕ Reject
                           </button>
                         </div>
                       )}
@@ -1519,30 +1606,42 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
             </div>
           )}
 
+          {/* FOLDER: REAL-TIME TRAFFIC REPORT */}
+          {orderFolderView === 'traffic' && (
+            <div className="space-y-4">
+              <TrafficAnalyticsReport
+                visitors={visitors}
+                activities={activities}
+                orders={orders}
+                onRefresh={loadData}
+              />
+            </div>
+          )}
+
           {/* FOLDER 2: WEB VISITORS LIST */}
           {orderFolderView === 'visitors' && (
             <div className="space-y-4">
               {/* Visitor Stats Counters */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs">
-                  <div className="text-[11px] text-slate-500 font-bold uppercase">মোট ভিজিটর</div>
+                  <div className="text-[11px] text-slate-500 font-bold uppercase">Total Visitors</div>
                   <div className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5">{visitors.length}</div>
                 </div>
                 <div className="p-3.5 rounded-2xl bg-white border border-emerald-200 bg-emerald-50/20 shadow-xs">
-                  <div className="text-[11px] text-emerald-700 font-bold uppercase">বর্তমানে অনলাইন</div>
+                  <div className="text-[11px] text-emerald-700 font-bold uppercase">Currently Online</div>
                   <div className="text-xl sm:text-2xl font-black text-emerald-600 mt-0.5 flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
                     <span>{visitors.filter((v) => v.isOnline).length}</span>
                   </div>
                 </div>
                 <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs">
-                  <div className="text-[11px] text-slate-500 font-bold uppercase">মোবাইল ডিভাইস</div>
+                  <div className="text-[11px] text-slate-500 font-bold uppercase">Mobile Devices</div>
                   <div className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5">
                     {visitors.filter((v) => (v.device || '').toLowerCase().includes('mobile')).length}
                   </div>
                 </div>
                 <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs">
-                  <div className="text-[11px] text-slate-500 font-bold uppercase">ডেস্কটপ ইউজার</div>
+                  <div className="text-[11px] text-slate-500 font-bold uppercase">Desktop Users</div>
                   <div className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5">
                     {visitors.filter((v) => (v.device || '').toLowerCase().includes('desktop')).length}
                   </div>
@@ -1558,7 +1657,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     visitorFilter === 'all' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  সকল ভিজিটর ({visitors.length})
+                  All Visitors ({visitors.length})
                 </button>
                 <button
                   type="button"
@@ -1567,7 +1666,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     visitorFilter === 'online' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  অনলাইন ({visitors.filter((v) => v.isOnline).length})
+                  Online ({visitors.filter((v) => v.isOnline).length})
                 </button>
                 <button
                   type="button"
@@ -1576,7 +1675,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     visitorFilter === 'mobile' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  মোবাইল ({visitors.filter((v) => (v.device || '').toLowerCase().includes('mobile')).length})
+                  Mobile ({visitors.filter((v) => (v.device || '').toLowerCase().includes('mobile')).length})
                 </button>
                 <button
                   type="button"
@@ -1585,7 +1684,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     visitorFilter === 'desktop' ? 'bg-slate-800 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  ডেস্কটপ ({visitors.filter((v) => (v.device || '').toLowerCase().includes('desktop')).length})
+                  Desktop ({visitors.filter((v) => (v.device || '').toLowerCase().includes('desktop')).length})
                 </button>
               </div>
 
@@ -1609,42 +1708,42 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                           {v.isOnline ? (
                             <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px] flex items-center gap-1 border border-emerald-200">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                              অনলাইন
+                              Online
                             </span>
                           ) : (
                             <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-medium border border-slate-200">
-                              অফলাইন
+                              Offline
                             </span>
                           )}
                           <span className="text-xs text-slate-500 font-mono">IP: {v.ip || '103.xxx'}</span>
                         </div>
 
                         <div className="text-xs text-slate-500">
-                          সর্বশেষ সক্রিয়: <span className="font-bold text-slate-700">{v.lastActive}</span>
+                          Last Active: <span className="font-bold text-slate-700">{v.lastActive}</span>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs bg-slate-50 p-3 rounded-xl border border-slate-100">
                         <div>
-                          <span className="text-slate-400 block text-[10px]">লোকেশন ও নেটওয়ার্ক:</span>
-                          <span className="font-bold text-slate-800">{v.city || 'ঢাকা'}, {v.country || 'বাংলাদেশ'}</span>
+                          <span className="text-slate-400 block text-[10px]">Location & Network:</span>
+                          <span className="font-bold text-slate-800">{v.city || 'Dhaka'}, {v.country || 'Bangladesh'}</span>
                           <span className="text-[11px] text-slate-500 block truncate">{v.isp || 'Local ISP'}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block text-[10px]">ডিভাইস ও ব্রাউজার:</span>
+                          <span className="text-slate-400 block text-[10px]">Device & Browser:</span>
                           <span className="font-bold text-slate-800">{v.device || 'Mobile'} ({v.os || 'Android'})</span>
                           <span className="text-[11px] text-slate-500 block">{v.browser || 'Chrome'}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block text-[10px]">বর্তমান পেজ ও সক্রিয়তা:</span>
-                          <span className="font-bold text-orange-600 truncate block">{v.currentPage || 'হোমপেজ'}</span>
-                          <span className="text-[11px] text-slate-500 block">{v.totalActions}টি ইন্টারঅ্যাকশন সম্পন্ন</span>
+                          <span className="text-slate-400 block text-[10px]">Current Page & Activity:</span>
+                          <span className="font-bold text-orange-600 truncate block">{v.currentPage || 'Homepage'}</span>
+                          <span className="text-[11px] text-slate-500 block">{v.totalActions} interactions recorded</span>
                         </div>
                       </div>
 
                       <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100 text-[11px]">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-slate-400">ভিজিটকৃত পেজ:</span>
+                          <span className="text-slate-400">Visited Pages:</span>
                           {(v.pagesVisited || []).map((page, idx) => (
                             <span key={idx} className="px-2 py-0.5 rounded-md bg-white text-slate-600 border border-slate-200">
                               {page}
@@ -1659,7 +1758,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                             className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-bold"
                           >
                             <ExternalLink className="w-3 h-3" />
-                            <span>ম্যাপে অবস্থান দেখুন</span>
+                            <span>View Location on Map</span>
                           </a>
                         )}
                       </div>
@@ -1681,7 +1780,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     activityCategoryFilter === 'all' ? 'bg-purple-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  সকল অ্যাক্টিভিটি ({activities.length})
+                  All Activities ({activities.length})
                 </button>
                 <button
                   type="button"
@@ -1690,7 +1789,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     activityCategoryFilter === 'order' ? 'bg-orange-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  অর্ডার ও TrxID ({activities.filter((a) => a.category === 'order').length})
+                  Orders & TrxID ({activities.filter((a) => a.category === 'order').length})
                 </button>
                 <button
                   type="button"
@@ -1699,7 +1798,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     activityCategoryFilter === 'payment' ? 'bg-pink-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  পেমেন্ট নম্বর কপি ({activities.filter((a) => a.category === 'payment').length})
+                  Payment Copied ({activities.filter((a) => a.category === 'payment').length})
                 </button>
                 <button
                   type="button"
@@ -1708,7 +1807,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     activityCategoryFilter === 'chat' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  লাইভ সাপোর্ট চ্যাট ({activities.filter((a) => a.category === 'chat').length})
+                  Live Support Chat ({activities.filter((a) => a.category === 'chat').length})
                 </button>
                 <button
                   type="button"
@@ -1717,7 +1816,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     activityCategoryFilter === 'navigation' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  পেজ ব্রাউজিং ({activities.filter((a) => a.category === 'navigation').length})
+                  Page Navigation ({activities.filter((a) => a.category === 'navigation').length})
                 </button>
               </div>
 
@@ -1758,10 +1857,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                           <p className="text-xs text-slate-600 leading-relaxed">{act.details}</p>
 
                           <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] text-slate-400 font-mono">
-                            <span>ভিজিটর: {act.visitorId}</span>
+                            <span>Visitor: {act.visitorId}</span>
                             {act.ip && <span>IP: {act.ip}</span>}
-                            {act.city && <span>লোকেশন: {act.city}</span>}
-                            {act.device && <span>ডিভাইস: {act.device}</span>}
+                            {act.city && <span>Location: {act.city}</span>}
+                            {act.device && <span>Device: {act.device}</span>}
                           </div>
                         </div>
                       </div>
@@ -1777,10 +1876,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
               <div className="p-4 rounded-3xl bg-white border border-slate-200 flex flex-wrap items-center justify-between gap-3 shadow-xs">
                 <div>
                   <h3 className="font-black text-slate-900 text-base">
-                    প্যাকেজে অন্তর্ভুক্ত সার্ভিস ও ফিচারসমূহ
+                    Included Package Services & Features
                   </h3>
                   <p className="text-xs text-slate-500">
-                    এখান থেকে সরাসরি যেকোনো সার্ভিস এডিট করুন বা মুছে ফেলুন। পরিবর্তনগুলো স্বয়ংক্রিয়ভাবে প্যাকেজ সেকশনে আপডেট হবে।
+                    Easily edit or delete services. All changes update instantly in the live package section.
                   </p>
                 </div>
                 <button
@@ -1789,7 +1888,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                   className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md shadow-emerald-600/20"
                 >
                   <PlusCircle className="w-4 h-4" />
-                  <span>নতুন সার্ভিস যোগ করুন</span>
+                  <span>Add New Service</span>
                 </button>
               </div>
 
@@ -1817,17 +1916,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                         className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
                       >
                         <Edit2 className="w-3 h-3 text-slate-500" />
-                        <span>এডিট</span>
+                        <span>Edit</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleDeleteFeature(feat.id, feat.bn || feat.text)}
                         className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1 border border-rose-200"
-                        title="এই সার্ভিসটি অবিলম্বে ডিলিট করুন"
+                        title="Delete this service immediately"
                       >
                         <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                        <span>মুছে ফেলুন</span>
+                        <span>Delete</span>
                       </button>
                     </div>
                   </div>
@@ -1859,22 +1958,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                   <div>
                     <h2 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
                       <Clock className="w-6 h-6 text-amber-500 animate-spin" />
-                      <span>পেন্ডিং TrxID ভেরিফিকেশন ও অনুমোদন</span>
+                      <span>Pending TrxID Verification & Approvals</span>
                     </h2>
                     <p className="text-xs sm:text-sm text-slate-500">
-                      গ্রাহকের বিকাশ ও নগদ পেমেন্ট ডিটেইলস মিলিয়ে Approved অথবা Accept করুন
+                      Verify customer bKash & Nagad payments and 1-click Approve or Accept orders
                     </p>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <span className="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
-                      <span>ভেরিফিকেশন অপেক্ষমাণ: {pendingCheckingOrders.length}টি</span>
+                      <span>Awaiting Verification: {pendingCheckingOrders.length}</span>
                     </span>
                   </div>
                 </div>
 
-                {/* Sub-Tabs: ভেরিফিকেশন অপেক্ষমাণ | Approved | Accept | সকল পেমেন্ট অর্ডার */}
+                {/* Sub-Tabs: Awaiting Verification | Approved | Accept | All Payment Orders */}
                 <div className="flex flex-wrap items-center gap-2 p-1.5 bg-slate-200/70 rounded-2xl border border-slate-300/80">
                   <button
                     type="button"
@@ -1886,7 +1985,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     }`}
                   >
                     <Clock className="w-3.5 h-3.5" />
-                    <span>ভেরিফিকেশন অপেক্ষমাণ ({pendingCheckingOrders.length})</span>
+                    <span>Awaiting Verification ({pendingCheckingOrders.length})</span>
                   </button>
 
                   <button
@@ -1899,7 +1998,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     }`}
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Approved / অনুমোদিত ({pendingVerifiedOrders.length})</span>
+                    <span>Approved ({pendingVerifiedOrders.length})</span>
                   </button>
 
                   <button
@@ -1912,7 +2011,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     }`}
                   >
                     <PlayCircle className="w-3.5 h-3.5" />
-                    <span>Accept / গৃহীত ও কাজ শুরু ({pendingAcceptedOrders.length})</span>
+                    <span>Accepted / In Progress ({pendingAcceptedOrders.length})</span>
                   </button>
 
                   <button
@@ -1924,27 +2023,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                         : 'text-slate-700 hover:bg-white/60'
                     }`}
                   >
-                    <span>সকল পেমেন্ট অর্ডার ({orders.length})</span>
+                    <span>All Payment Orders ({orders.length})</span>
                   </button>
                 </div>
 
                 {/* Pending Quick Overview Counters */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs">
-                    <span className="text-[11px] text-slate-400 font-bold block">অপেক্ষমাণ TrxID</span>
-                    <span className="text-xl sm:text-2xl font-black text-amber-600 mt-0.5 block">{pendingCheckingOrders.length} টি</span>
+                    <span className="text-[11px] text-slate-400 font-bold block">Awaiting TrxID</span>
+                    <span className="text-xl sm:text-2xl font-black text-amber-600 mt-0.5 block">{pendingCheckingOrders.length}</span>
                   </div>
                   <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs">
-                    <span className="text-[11px] text-slate-400 font-bold block">Approved (অনুমোদিত)</span>
-                    <span className="text-xl sm:text-2xl font-black text-emerald-600 mt-0.5 block">{pendingVerifiedOrders.length} টি</span>
+                    <span className="text-[11px] text-slate-400 font-bold block">Approved</span>
+                    <span className="text-xl sm:text-2xl font-black text-emerald-600 mt-0.5 block">{pendingVerifiedOrders.length}</span>
                   </div>
                   <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs">
-                    <span className="text-[11px] text-slate-400 font-bold block">Accept (কাজ চলমান)</span>
-                    <span className="text-xl sm:text-2xl font-black text-blue-600 mt-0.5 block">{pendingAcceptedOrders.length} টি</span>
+                    <span className="text-[11px] text-slate-400 font-bold block">Accepted (In Progress)</span>
+                    <span className="text-xl sm:text-2xl font-black text-blue-600 mt-0.5 block">{pendingAcceptedOrders.length}</span>
                   </div>
                   <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs">
-                    <span className="text-[11px] text-slate-400 font-bold block">মোট পেমেন্ট অর্ডার</span>
-                    <span className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5 block">{orders.length} টি</span>
+                    <span className="text-[11px] text-slate-400 font-bold block">Total Payment Orders</span>
+                    <span className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5 block">{orders.length}</span>
                   </div>
                 </div>
 
@@ -1954,12 +2053,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                       <CheckCircle2 className="w-8 h-8" />
                     </div>
                     <h3 className="text-lg font-bold text-slate-900">
-                      {pendingSubTab === 'pending' ? 'সব পেমেন্ট ভেরিফাইড!' : 'এই ক্যাটাগরিতে কোনো অর্ডার নেই'}
+                      {pendingSubTab === 'pending' ? 'All payments verified!' : 'No orders in this category'}
                     </h3>
                     <p className="text-xs text-slate-500 max-w-sm mx-auto">
                       {pendingSubTab === 'pending'
-                        ? 'বর্তমানে কোনো আনভেরিফাইড TrxID পেন্ডিং নেই। নতুন গ্রাহক অর্ডার দিলে ৩ সেকেন্ডের মধ্যে এখানে স্বয়ংক্রিয়ভাবে দেখাবে।'
-                        : 'অন্যান্য ক্যাটাগরি দেখতে উপরের ট্যাবগুলোতে চাপুন।'}
+                        ? 'There are currently no unverified TrxIDs pending. New orders will appear here within 3 seconds.'
+                        : 'Click the tabs above to view other categories.'}
                     </p>
                   </div>
                 ) : (
@@ -1995,27 +2094,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                             {order.status === 'verified' ? (
                               <span className="text-emerald-800 font-bold text-xs bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 flex items-center gap-1.5">
                                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                <span>পেমেন্ট অনুমোদিত (Approved)</span>
+                                <span>Payment Approved</span>
                               </span>
                             ) : order.status === 'in_progress' ? (
                               <span className="text-blue-800 font-bold text-xs bg-blue-50 px-3 py-1 rounded-full border border-blue-200 flex items-center gap-1.5">
                                 <PlayCircle className="w-3.5 h-3.5 text-blue-600" />
-                                <span>অর্ডার গৃহীত ও কাজ চলমান (Accepted)</span>
+                                <span>Order Accepted & In Progress</span>
                               </span>
                             ) : order.status === 'completed' ? (
                               <span className="text-emerald-800 font-bold text-xs bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 flex items-center gap-1.5">
                                 <Check className="w-3.5 h-3.5 text-emerald-600" />
-                                <span>কাজ সম্পন্ন (Completed)</span>
+                                <span>Completed</span>
                               </span>
                             ) : order.status === 'rejected' ? (
                               <span className="text-rose-800 font-bold text-xs bg-rose-50 px-3 py-1 rounded-full border border-rose-200 flex items-center gap-1.5">
                                 <X className="w-3.5 h-3.5 text-rose-600" />
-                                <span>বাতিল (Rejected)</span>
+                                <span>✕ Reject (Rejected)</span>
                               </span>
                             ) : (
                               <span className="text-amber-800 font-bold text-xs bg-amber-50 px-3 py-1 rounded-full border border-amber-200 flex items-center gap-1.5">
                                 <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                                <span>ভেরিফিকেশন অপেক্ষমাণ</span>
+                                <span>Awaiting Verification</span>
                               </span>
                             )}
                           </div>
@@ -2026,14 +2125,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
                               <CreditCard className="w-4 h-4 text-orange-600" />
-                              <span>পেমেন্ট বিস্তারিত (Payment Details):</span>
+                              <span>Payment Details:</span>
                             </span>
                             <span className={`px-2.5 py-0.5 rounded-lg text-xs font-bold border ${
                               order.paymentMethod === 'bKash'
                                 ? 'bg-pink-100 text-pink-700 border-pink-200'
                                 : 'bg-orange-100 text-orange-700 border-orange-200'
                             }`}>
-                              {order.paymentMethod === 'bKash' ? 'বিকাশ (bKash Personal)' : 'নগদ (Nagad Personal)'}
+                              {order.paymentMethod === 'bKash' ? 'bKash Personal' : 'Nagad Personal'}
                             </span>
                           </div>
 
@@ -2056,7 +2155,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                                   type="button"
                                   onClick={() => handleCopyTrx(order.trxId)}
                                   className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                                  title="TrxID কপি করুন"
+                                  title="Copy TrxID"
                                 >
                                   {copiedTrxId === order.trxId ? (
                                     <Check className="w-4 h-4 text-emerald-600" />
@@ -2070,7 +2169,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                             {/* Sender Number */}
                             <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-1">
                               <span className="text-[10px] text-slate-400 font-bold block uppercase">
-                                প্রেরক নম্বর (Sender Number)
+                                Sender Number
                               </span>
                               <div className="flex items-center justify-between gap-2">
                                 <span className="font-mono text-base font-bold text-slate-900">
@@ -2081,17 +2180,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                                     type="button"
                                     onClick={() => {
                                       navigator.clipboard.writeText(order.senderNumber);
-                                      showToast('প্রেরক নম্বর কপি করা হয়েছে');
+                                      showToast('Sender phone number copied to clipboard');
                                     }}
                                     className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                                    title="নম্বর কপি করুন"
+                                    title="Copy Phone Number"
                                   >
                                     <Copy className="w-3.5 h-3.5" />
                                   </button>
                                   <a
                                     href={`tel:${order.senderNumber}`}
                                     className="p-1.5 rounded-lg hover:bg-slate-100 text-orange-600 hover:text-orange-700 transition-colors cursor-pointer"
-                                    title="কল করুন"
+                                    title="Call Customer"
                                   >
                                     <Phone className="w-4 h-4" />
                                   </a>
@@ -2102,7 +2201,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                             {/* Amount & Receiving Number */}
                             <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-1">
                               <span className="text-[10px] text-slate-400 font-bold block uppercase">
-                                পরিমাণ ও রিসিভিং নম্বর
+                                AMOUNT & RECEIVING NUMBER
                               </span>
                               <div className="flex items-center justify-between">
                                 <span className="text-base font-black text-emerald-600">
@@ -2119,7 +2218,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                           <div className="text-[11px] text-amber-900/80 bg-amber-100/60 p-2.5 rounded-xl border border-amber-200/60 flex items-center gap-2">
                             <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0" />
                             <span>
-                              স্টেটমেন্ট ভেরিফিকেশন গাইড: বিকাশ/নগদ অ্যাপে প্রেরক নম্বর <strong>{order.senderNumber}</strong> এবং TrxID <strong>{order.trxId}</strong> মিলিয়ে নিশ্চিত হলে নিচের Approved বা Accept বাটনে চাপুন।
+                              Statement Verification Guide: Check sender number <strong>{order.senderNumber}</strong> and TrxID <strong>{order.trxId}</strong> in your bKash/Nagad app, then click Approved or Accept below.
                             </span>
                           </div>
                         </div>
@@ -2127,7 +2226,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                         {/* Customer & Location Details */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                           <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-                            <span className="text-slate-400 block text-[10px] font-bold uppercase">গ্রাহকের ফেসবুক পেজ:</span>
+                            <span className="text-slate-400 block text-[10px] font-bold uppercase">Customer Facebook Page:</span>
                             <a
                               href={order.pageUrl}
                               target="_blank"
@@ -2139,19 +2238,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                             </a>
                             {order.notes && (
                               <p className="text-slate-600 pt-1 border-t border-slate-200 mt-1">
-                                নোট: "{order.notes}"
+                                Note: "{order.notes}"
                               </p>
                             )}
                           </div>
 
                           <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-                            <span className="text-slate-400 block text-[10px] font-bold uppercase">লোকেশন ও ডিভাইস:</span>
+                            <span className="text-slate-400 block text-[10px] font-bold uppercase">Location & Device:</span>
                             <div className="text-slate-800 font-bold">
-                              {order.clientLocation?.city || 'ঢাকা'}, {order.clientLocation?.country || 'বাংলাদেশ'}
+                              {order.clientLocation?.city || 'Dhaka'}, {order.clientLocation?.country || 'Bangladesh'}
                               <span className="text-slate-500 font-mono font-normal ml-2">IP: {order.clientLocation?.ip || '103.xxx'}</span>
                             </div>
                             <div className="text-slate-500 text-[11px]">
-                              ডিভাইস: {order.clientLocation?.device || 'Mobile'} ({order.clientLocation?.os || 'Android'}) · ব্রাউজার: {order.clientLocation?.browser || 'Chrome'}
+                              Device: {order.clientLocation?.device || 'Mobile'} ({order.clientLocation?.os || 'Android'}) · Browser: {order.clientLocation?.browser || 'Chrome'}
                             </div>
                           </div>
                         </div>
@@ -2165,17 +2264,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                               className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
                             >
                               <FileText className="w-3.5 h-3.5 text-slate-500" />
-                              <span>পূর্ণ বিবরণী</span>
+                              <span>Full Details</span>
                             </button>
 
                             <button
                               type="button"
                               onClick={() => handleDelete(order.id)}
                               className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border border-rose-200"
-                              title="এই অর্ডারটি স্থায়ীভাবে মুছে ফেলুন"
+                              title="Delete this order permanently"
                             >
                               <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                              <span>মুছে ফেলুন</span>
+                              <span>Delete</span>
                             </button>
                           </div>
 
@@ -2189,7 +2288,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                                   className="px-4 py-2.5 rounded-xl bg-white border border-rose-300 hover:bg-rose-50 text-rose-700 text-xs font-bold transition-all cursor-pointer shadow-xs flex items-center gap-1.5"
                                 >
                                   <X className="w-3.5 h-3.5" />
-                                  <span>বাতিল (Reject)</span>
+                                  <span>✕ Reject (Reject)</span>
                                 </button>
 
                                 <button
@@ -2198,7 +2297,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                                   className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-extrabold transition-all cursor-pointer shadow-md shadow-blue-600/20 active:scale-95 flex items-center gap-1.5"
                                 >
                                   <PlayCircle className="w-4 h-4" />
-                                  <span>Accept (গ্রহণ ও কাজ শুরু)</span>
+                                  <span>Accept Order</span>
                                 </button>
 
                                 <button
@@ -2207,7 +2306,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                                   className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-extrabold transition-all cursor-pointer shadow-md shadow-emerald-600/25 active:scale-95 flex items-center gap-1.5"
                                 >
                                   <CheckCircle2 className="w-4 h-4" />
-                                  <span>Approved (অনুমোদন করুন)</span>
+                                  <span>Approve Payment</span>
                                 </button>
                               </>
                             )}
@@ -2220,7 +2319,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                                 className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-extrabold transition-all cursor-pointer shadow-md shadow-blue-600/20 active:scale-95 flex items-center gap-1.5"
                               >
                                 <PlayCircle className="w-4 h-4" />
-                                <span>Accept (কাজ প্রসেসিং শুরু)</span>
+                                <span>Accept (Start Processing)</span>
                               </button>
                             )}
 
@@ -2229,14 +2328,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                               <button
                                 type="button"
                                 onClick={() => {
-                                  updateOrderStatus(order.id, 'completed', 'কাজ সফলভাবে সম্পন্ন হয়েছে');
+                                  updateOrderStatus(order.id, 'completed', 'Order completed successfully');
                                   setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: 'completed' } : o)));
-                                  showToast(`অর্ডার ${order.id} সম্পন্ন (Completed) করা হয়েছে!`);
+                                  showToast(`Order ${order.id} marked as completed!`);
                                 }}
                                 className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-extrabold transition-all cursor-pointer shadow-md shadow-emerald-600/25 active:scale-95 flex items-center gap-1.5"
                               >
                                 <Check className="w-4 h-4" />
-                                <span>কাজ সম্পন্ন (Complete)</span>
+                                <span>Mark as Completed</span>
                               </button>
                             )}
                           </div>
@@ -2254,10 +2353,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
             <div className="max-w-2xl mx-auto space-y-6">
               <div>
                 <h2 className="text-xl sm:text-2xl font-black text-slate-900">
-                  ম্যানুয়াল অর্ডার এন্ট্রি করুন
+                  Manual Order Entry
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-500">
-                  কোনো গ্রাহক সরাসরি ফোন বা অফলাইনে পেমেন্ট করলে অ্যাডমিন থেকে সরাসরি অর্ডার এন্ট্রি করুন
+                  Directly enter and approve orders for clients who paid offline or via direct phone call.
                 </p>
               </div>
 
@@ -2265,14 +2364,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                 <form onSubmit={handleManualOrderSubmit} className="space-y-4 text-xs sm:text-sm">
                   <div className="space-y-1.5">
                     <label className="font-bold text-slate-700 block">
-                      গ্রাহকের পুরো নাম <span className="text-rose-500">*</span>
+                      Customer Full Name <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
                       required
                       value={manualForm.fullName}
                       onChange={(e) => setManualForm({ ...manualForm, fullName: e.target.value })}
-                      placeholder="যেমন: তানভীর আহমেদ"
+                      placeholder="e.g. Tanvir Ahmed"
                       className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-orange-500 shadow-2xs"
                     />
                   </div>
@@ -2280,36 +2379,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="font-bold text-slate-700 block">
-                        মোবাইল নম্বর <span className="text-rose-500">*</span>
+                        Phone Number <span className="text-rose-500">*</span>
                       </label>
                       <input
                         type="tel"
                         required
                         value={manualForm.phoneNumber}
                         onChange={(e) => setManualForm({ ...manualForm, phoneNumber: e.target.value })}
-                        placeholder="যেমন: 017XXXXXXXX"
+                        placeholder="e.g. 017XXXXXXXX"
                         className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-orange-500 shadow-2xs"
                       />
                     </div>
 
                     <div className="space-y-1.5">
                       <label className="font-bold text-slate-700 block">
-                        পেমেন্ট মেথড <span className="text-rose-500">*</span>
+                        Payment Method <span className="text-rose-500">*</span>
                       </label>
                       <select
                         value={manualForm.paymentMethod}
                         onChange={(e) => setManualForm({ ...manualForm, paymentMethod: e.target.value as PaymentMethod })}
                         className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs"
                       >
-                        <option value="bKash">বিকাশ (bKash)</option>
-                        <option value="Nagad">নগদ (Nagad)</option>
+                        <option value="bKash">bKash</option>
+                        <option value="Nagad">Nagad</option>
                       </select>
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="font-bold text-slate-700 block">
-                      ফেসবুক পেজ / প্রোফাইল লিংক <span className="text-rose-500">*</span>
+                      Facebook Page / Profile URL <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="url"
@@ -2331,14 +2430,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                         required
                         value={manualForm.trxId}
                         onChange={(e) => setManualForm({ ...manualForm, trxId: e.target.value })}
-                        placeholder="যেমন: BK9A7X3L01"
+                        placeholder="e.g. BK9A7X3L01"
                         className="w-full px-4 py-2.5 rounded-xl bg-orange-50/50 border border-orange-300 text-slate-900 font-mono font-bold uppercase placeholder-slate-400 focus:outline-none focus:border-orange-500 shadow-2xs"
                       />
                     </div>
 
                     <div className="space-y-1.5">
                       <label className="font-bold text-slate-700 block">
-                        সার্ভিস ফি (টাকা)
+                        Service Fee (BDT)
                       </label>
                       <input
                         type="number"
@@ -2351,13 +2450,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
 
                   <div className="space-y-1.5">
                     <label className="font-bold text-slate-700 block">
-                      অতিরিক্ত নোট (Optional)
+                      Additional Notes (Optional)
                     </label>
                     <textarea
                       rows={2}
                       value={manualForm.notes}
                       onChange={(e) => setManualForm({ ...manualForm, notes: e.target.value })}
-                      placeholder="গ্রাহকের বিশেষ চাহিদা বা নির্দেশনা..."
+                      placeholder="Special customer instructions or requests..."
                       className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-orange-500 resize-none shadow-2xs"
                     />
                   </div>
@@ -2366,7 +2465,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     type="submit"
                     className="w-full py-3.5 rounded-xl bg-gradient-to-r from-orange-600 via-rose-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-black text-sm shadow-md shadow-orange-600/25 transition-all cursor-pointer"
                   >
-                    অর্ডার সেভ ও সরাসরি ভেরিফাই করুন
+                    Save Order & Approve Directly
                   </button>
                 </form>
               </div>
@@ -2382,17 +2481,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                 <div>
                   <h2 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
                     <MessageSquare className="w-6 h-6 text-emerald-600" />
-                    <span>লাইভ চ্যাট কনভারসেশন ও অটোমেটিক এআই রিপ্লাই</span>
+                    <span>Live Chat Conversations & AI Support</span>
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-500">
-                    ওয়েবসাইটের লাইভ চ্যাটে গ্রাহকরা যে প্রশ্নই করুক, আমাদের সিস্টেম স্বয়ংক্রিয়ভাবে উত্তর দেয়। প্রয়োজনে আপনি সরাসরিও মেসেজ পাঠাতে পারেন।
+                    When visitors ask questions on the website live chat, the system automatically answers. You can also send direct admin replies.
                   </p>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <span className="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200 flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>অটো-রিপ্লাই ইঞ্জিন সক্রিয় (২৪/৭)</span>
+                    <span>Auto-Reply Engine Active (24/7)</span>
                   </span>
                 </div>
               </div>
@@ -2403,9 +2502,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                   <div className="w-14 h-14 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center mx-auto border border-orange-200">
                     <MessageSquare className="w-8 h-8" />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900">কোনো চ্যাট মেসেজ নেই</h3>
+                  <h3 className="text-lg font-bold text-slate-900">No chat messages yet</h3>
                   <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                    গ্রাহকরা সাইটের ডানদিকের লাইভ চ্যাটে প্রশ্ন করলে এখানে স্বয়ংক্রিয়ভাবে কনভারসেশন জমা হবে।
+                    When visitors send messages via the website live chat, conversations appear here in real-time.
                   </p>
                 </div>
               ) : (
@@ -2415,7 +2514,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                   <div className="lg:col-span-4 border-r border-slate-100 flex flex-col h-full bg-slate-50/50">
                     <div className="p-4 border-b border-slate-200 bg-white">
                       <div className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                        সকল কনভারসেশন ({chatSessions.length})
+                        All Conversations ({chatSessions.length})
                       </div>
                     </div>
 
@@ -2440,7 +2539,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                           >
                             <div className="flex items-center justify-between gap-2 mb-1">
                               <span className="font-bold text-xs text-slate-900 truncate">
-                                {sess.clientName || 'গ্রাহক (অনলাইন ভিজিটর)'}
+                                {sess.clientName || 'Customer (Online Visitor)'}
                               </span>
                               <span className="text-[10px] text-slate-400 font-mono shrink-0">
                                 {sess.updatedAt}
@@ -2455,7 +2554,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                             )}
 
                             <p className="text-xs text-slate-500 truncate line-clamp-1">
-                              {lastMsg ? lastMsg.text : 'কোনো মেসেজ নেই'}
+                              {lastMsg ? lastMsg.text : 'No messages yet'}
                             </p>
                           </button>
                         );
@@ -2486,14 +2585,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                           <div>
                             <div className="flex items-center gap-2">
                               <span className="font-bold text-sm text-slate-900">
-                                {currentChat.clientName || 'গ্রাহক'}
+                                {currentChat.clientName || 'Customer'}
                               </span>
                               <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-                                সক্রিয়
+                                Active
                               </span>
                             </div>
                             <span className="text-[10px] text-slate-400 font-mono">
-                              ID: {currentChat.id} · শুরু: {currentChat.createdAt}
+                              ID: {currentChat.id} · Started: {currentChat.createdAt}
                             </span>
                           </div>
 
@@ -2510,7 +2609,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                                   rel="noopener noreferrer"
                                   className="text-[10px] text-orange-600 hover:underline inline-flex items-center gap-1"
                                 >
-                                  <span>ম্যাপে অবস্থান দেখুন</span>
+                                  <span>View Location on Map</span>
                                   <ExternalLink className="w-3 h-3" />
                                 </a>
                               )}
@@ -2530,7 +2629,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                                 className={`flex flex-col ${isClient ? 'items-start' : 'items-end'}`}
                               >
                                 <div className="text-[10px] text-slate-400 mb-1 px-1 font-mono">
-                                  {isClient ? 'গ্রাহকের প্রশ্ন' : isAdmin ? '👨‍💼 অ্যাডমিন উত্তর' : '🎧 লাইভ সাপোর্ট টিম'} · {m.timestamp}
+                                  {isClient ? 'Customer' : isAdmin ? '👨‍💼 Admin Reply' : '🎧 AI Support Team'} · {m.timestamp}
                                 </div>
                                 <div
                                   className={`max-w-[85%] px-4 py-3 rounded-2xl text-xs sm:text-sm leading-relaxed whitespace-pre-line shadow-xs ${
@@ -2555,14 +2654,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                                       <div className="p-1.5 flex items-center justify-between text-[11px]">
                                         <span className="font-semibold text-slate-700 flex items-center gap-1">
                                           <Camera className="w-3.5 h-3.5 text-orange-600" />
-                                          <span>স্ক্রিনশট সংযুক্ত</span>
+                                          <span>Screenshot attached</span>
                                         </span>
                                         <button
                                           type="button"
                                           onClick={() => setPreviewScreenshotUrl(m.attachmentUrl || null)}
                                           className="text-orange-600 font-bold hover:underline cursor-pointer"
                                         >
-                                          বড় করে দেখুন ↗
+                                          View full size ↗
                                         </button>
                                       </div>
                                     </div>
@@ -2579,14 +2678,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                           className="p-4 border-t border-slate-200 bg-white space-y-2"
                         >
                           <div className="flex items-center justify-between text-[11px] text-slate-500">
-                            <span>ক্লিয়েন্টকে স্বয়ংক্রিয়ভাবে রোবট উত্তর দেওয়া হয়। তবে প্রয়োজন হলে আপনি সরাসরি যেকোনো উত্তর দিতে পারেন:</span>
+                            <span>AI automatically replies to visitors. You can also send a direct reply as admin below:</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <input
                               type="text"
                               value={adminReplyInput}
                               onChange={(e) => setAdminReplyInput(e.target.value)}
-                              placeholder="অ্যাডমিন হিসেবে ক্লায়েন্টকে উত্তর লিখুন..."
+                              placeholder="Type reply to customer as admin..."
                               className="flex-1 px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
                             />
                             <button
@@ -2595,7 +2694,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                               className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-rose-600 hover:from-orange-500 hover:to-amber-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-orange-600/20 disabled:opacity-40"
                             >
                               <Send className="w-3.5 h-3.5" />
-                              <span>পাঠান</span>
+                              <span>Send Reply</span>
                             </button>
                           </div>
                         </form>
@@ -2617,10 +2716,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                 <div>
                   <h2 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
                     <HelpCircle className="w-6 h-6 text-orange-600" />
-                    <span>প্রশ্ন-উত্তর (FAQ) কনটেন্ট ম্যানেজার</span>
+                    <span>FAQ Content Manager</span>
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-500">
-                    ওয়েবসাইটের FAQ সেকশনের প্রশ্ন ও উত্তর সহজে যোগ, এডিট বা ডিলিট করুন
+                    Easily manage questions and answers displayed in the website FAQ section.
                   </p>
                 </div>
 
@@ -2630,7 +2729,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                   className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-rose-600 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md shadow-orange-600/25"
                 >
                   <PlusCircle className="w-4 h-4" />
-                  <span>নতুন FAQ যোগ করুন</span>
+                  <span>Add New FAQ</span>
                 </button>
               </div>
 
@@ -2655,7 +2754,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                           type="button"
                           onClick={() => handleOpenFaqModal(faq)}
                           className="p-1.5 rounded-lg text-slate-600 hover:text-orange-600 hover:bg-orange-50 transition-colors"
-                          title="এডিট করুন"
+                          title="Edit FAQ"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
@@ -2663,7 +2762,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                           type="button"
                           onClick={() => handleDeleteFaq(faq.id)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                          title="মুছে ফেলুন"
+                          title="Delete permanently"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -2686,10 +2785,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                 <div>
                   <h2 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
                     <ListPlus className="w-6 h-6 text-indigo-600" />
-                    <span>প্যাকেজ ফিচার কনটেন্ট ম্যানেজার</span>
+                    <span>Package Features Manager</span>
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-500">
-                    ওয়েবসাইটের স্পেশাল প্যাকেজ কার্ডে প্রদর্শিত সুবিধাসমূহ নিয়ন্ত্রণ করুন
+                    Manage the features and services displayed on the pricing package card.
                   </p>
                 </div>
 
@@ -2699,7 +2798,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                   className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-rose-600 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md shadow-orange-600/25"
                 >
                   <PlusCircle className="w-4 h-4" />
-                  <span>নতুন ফিচার যোগ করুন</span>
+                  <span>Add New Feature</span>
                 </button>
               </div>
 
@@ -2724,7 +2823,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                         type="button"
                         onClick={() => handleOpenFeatureModal(feat)}
                         className="p-1.5 rounded-lg text-slate-600 hover:text-orange-600 hover:bg-orange-50 transition-colors"
-                        title="এডিট করুন"
+                        title="Edit FAQ"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
@@ -2732,7 +2831,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                         type="button"
                         onClick={() => handleDeleteFeature(feat.id)}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                        title="মুছে ফেলুন"
+                        title="Delete permanently"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -2748,17 +2847,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
             <div className="max-w-2xl mx-auto space-y-6">
               <div>
                 <h2 className="text-xl sm:text-2xl font-black text-slate-900">
-                  পেমেন্ট, লাইভ ব্যানার ও সিস্টেম সেটিংস
+                  Payment, Live Banner & System Settings
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-500">
-                  ওয়েবসাইটে প্রদর্শিত বিকাশ ও নগদ নম্বর, প্যাকেজ মূল্য, লাইভ অ্যানাউন্সমেন্ট ব্যানার এবং ক্রেডেনশিয়াল পরিচালনা করুন
+                  Manage official payment numbers, package price, top announcement banner, and admin credentials.
                 </p>
               </div>
 
               {settingsSavedToast && (
                 <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>সেটিংস সফলভাবে সংরক্ষিত হয়েছে! ওয়েবসাইটে তাৎক্ষণিকভাবে আপডেট কার্যকর হয়েছে।</span>
+                  <span>Settings saved successfully! Updates are live immediately.</span>
                 </div>
               )}
 
@@ -2770,7 +2869,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Megaphone className="w-4 h-4 text-orange-600" />
-                        <span className="font-bold text-slate-900 text-sm">লাইভ অ্যানাউন্সমেন্ট ব্যানার</span>
+                        <span className="font-bold text-slate-900 text-sm">Live Announcement Banner</span>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input
@@ -2784,16 +2883,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     </div>
 
                     <p className="text-[11px] text-slate-600">
-                      সক্রিয় করলে পুরো ওয়েবসাইটের একদম শীর্ষে একটি নোটিশ ব্যানার প্রদর্শিত হবে।
+                      When active, a promotional notice banner appears at the very top of the website.
                     </p>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-semibold text-slate-700 block">ব্যানার টেক্সট</label>
+                      <label className="text-xs font-semibold text-slate-700 block">Banner Notice Text</label>
                       <input
                         type="text"
                         value={settingsForm.announcementText || ''}
                         onChange={(e) => setSettingsForm({ ...settingsForm, announcementText: e.target.value })}
-                        placeholder="যেমন: 🔥 বিশেষ নোটিশ: ফেসবুক মনিটাইজেশন সেটআপে সীমিত সময়ের ডিসকাউন্ট চলছে!"
+                        placeholder="e.g. 🔥 Special Notice: Limited-time discount on Facebook Monetization Setup!"
                         className="w-full px-3 py-2 rounded-xl bg-white border border-orange-200 text-slate-900 focus:outline-none focus:border-orange-500 text-xs"
                       />
                     </div>
@@ -2801,7 +2900,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
 
                   <div className="space-y-1.5">
                     <label className="font-bold text-slate-700 block">
-                      অফিশিয়াল বিকাশ ও নগদ নম্বর (পার্সোনাল - Send Money) <span className="text-rose-500">*</span>
+                      Official bKash & Nagad Number (Personal - Send Money) <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -2812,13 +2911,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                       className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono font-bold text-base focus:outline-none focus:border-orange-500 shadow-2xs"
                     />
                     <p className="text-[11px] text-slate-500">
-                      এই নম্বরটি পুরো ওয়েবসাইটের অর্ডার ফর্ম, হিরো ও ফুটারে স্বয়ংক্রিয়ভাবে দেখাবে।
+                      This number automatically updates across the order form, hero, and footer on the website.
                     </p>
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="font-bold text-slate-700 block">
-                      প্যাকেজ মূল্য (BDT) <span className="text-rose-500">*</span>
+                      Package Price (BDT) <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -2831,7 +2930,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
 
                   <div className="space-y-1.5">
                     <label className="font-bold text-slate-700 block">
-                      ব্র্যান্ডের নাম
+                      Brand Name
                     </label>
                     <input
                       type="text"
@@ -2845,7 +2944,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="font-bold text-slate-700 block">
-                        অ্যাডমিন User Name <span className="text-rose-500">*</span>
+                        Admin Username <span className="text-rose-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -2858,7 +2957,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
 
                     <div className="space-y-1.5">
                       <label className="font-bold text-slate-700 block">
-                        অ্যাডমিন Password <span className="text-rose-500">*</span>
+                        Admin Password <span className="text-rose-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -2875,7 +2974,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                       type="submit"
                       className="w-full py-3.5 rounded-xl bg-gradient-to-r from-orange-600 via-rose-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-black text-sm shadow-md shadow-orange-600/25 transition-all cursor-pointer"
                     >
-                      সেটিংস সংরক্ষণ করুন
+                      Save Settings
                     </button>
                   </div>
 
@@ -2894,7 +2993,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
           <div className="relative w-full max-w-lg bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4 text-slate-800">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h4 className="font-bold text-slate-900 text-sm sm:text-base">
-                {editingFaqId ? 'FAQ প্রশ্ন এডিট করুন' : 'নতুন FAQ প্রশ্ন যোগ করুন'}
+                {editingFaqId ? 'Edit FAQ Item' : 'Add New FAQ Item'}
               </h4>
               <button
                 type="button"
@@ -2907,25 +3006,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
 
             <form onSubmit={handleSaveFaq} className="space-y-4 text-xs sm:text-sm">
               <div className="space-y-1">
-                <label className="font-bold text-slate-700 block">প্রশ্ন (Question)</label>
+                <label className="font-bold text-slate-700 block">Question</label>
                 <input
                   type="text"
                   required
                   value={faqForm.question}
                   onChange={(e) => setFaqForm({ ...faqForm, question: e.target.value })}
-                  placeholder="যেমন: সার্ভিস ফি কত এবং কীভাবে পেমেন্ট করব?"
+                  placeholder="e.g. How much is the service fee and how do I pay?"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 focus:outline-none focus:border-orange-500"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold text-slate-700 block">উত্তর (Answer)</label>
+                <label className="font-bold text-slate-700 block">Answer</label>
                 <textarea
                   rows={4}
                   required
                   value={faqForm.answer}
                   onChange={(e) => setFaqForm({ ...faqForm, answer: e.target.value })}
-                  placeholder="প্রশ্নের বিস্তারিত ও স্পষ্ট উত্তর লিখুন..."
+                  placeholder="Write a clear, helpful answer..."
                   className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 focus:outline-none focus:border-orange-500 resize-none"
                 />
               </div>
@@ -2936,13 +3035,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                   onClick={() => setFaqModalOpen(false)}
                   className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 text-xs font-semibold cursor-pointer"
                 >
-                  বাতিল
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-gradient-to-r from-orange-600 to-rose-600 text-white text-xs font-bold shadow-md cursor-pointer"
                 >
-                  সংরক্ষণ করুন
+                  Save FAQ
                 </button>
               </div>
             </form>
@@ -2956,7 +3055,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
           <div className="relative w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4 text-slate-800">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h4 className="font-bold text-slate-900 text-sm sm:text-base">
-                {editingFeatureId ? 'প্যাকেজ ফিচার এডিট করুন' : 'নতুন ফিচার যোগ করুন'}
+                {editingFeatureId ? 'Edit Package Feature' : 'Add New Feature'}
               </h4>
               <button
                 type="button"
@@ -2969,25 +3068,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
 
             <form onSubmit={handleSaveFeature} className="space-y-4 text-xs sm:text-sm">
               <div className="space-y-1">
-                <label className="font-bold text-slate-700 block">ফিচার শিরোনাম (Title)</label>
+                <label className="font-bold text-slate-700 block">Feature Title (English)</label>
                 <input
                   type="text"
                   required
                   value={featureForm.text}
                   onChange={(e) => setFeatureForm({ ...featureForm, text: e.target.value })}
-                  placeholder="যেমন: Facebook Monetization Assistance"
+                  placeholder="e.g. Facebook Monetization Assistance"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 focus:outline-none focus:border-orange-500"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold text-slate-700 block">বাংলা ব্যাখ্যা (Bangla description)</label>
+                <label className="font-bold text-slate-700 block">Description / Bengali Subtitle</label>
                 <input
                   type="text"
                   required
                   value={featureForm.bn}
                   onChange={(e) => setFeatureForm({ ...featureForm, bn: e.target.value })}
-                  placeholder="যেমন: মনিটাইজেশন সেটিংস ও কারিগরি সহায়তা"
+                  placeholder="e.g. Monetization setup & technical guidance"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 focus:outline-none focus:border-orange-500"
                 />
               </div>
@@ -2998,13 +3097,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                   onClick={() => setFeatureModalOpen(false)}
                   className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 text-xs font-semibold cursor-pointer"
                 >
-                  বাতিল
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-gradient-to-r from-orange-600 to-rose-600 text-white text-xs font-bold shadow-md cursor-pointer"
                 >
-                  সংরক্ষণ করুন
+                  Save Feature
                 </button>
               </div>
             </form>
@@ -3021,7 +3120,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
               <div className="flex items-center gap-2.5">
                 <ExpartBDLogo variant="icon" iconClassName="w-8 h-8" />
                 <div>
-                  <h4 className="font-bold text-slate-900 text-sm">Expart BD — মানি রিসিট</h4>
+                  <h4 className="font-bold text-slate-900 text-sm">Expart BD — Official Receipt</h4>
                   <span className="text-[10px] text-slate-500 font-mono">Invoice #{selectedReceiptOrder.id}</span>
                 </div>
               </div>
@@ -3036,19 +3135,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
 
             <div className="space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-200 font-mono text-[11px]">
               <div className="flex justify-between">
-                <span className="text-slate-500">তারিখ:</span>
+                <span className="text-slate-500">Date:</span>
                 <span className="text-slate-900">{selectedReceiptOrder.createdAt}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">গ্রাহক:</span>
+                <span className="text-slate-500">Customer:</span>
                 <span className="font-bold text-slate-900">{selectedReceiptOrder.fullName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">মোবাইল:</span>
+                <span className="text-slate-500">Phone:</span>
                 <span className="text-slate-900">{selectedReceiptOrder.phoneNumber}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">পেমেন্ট মেথড:</span>
+                <span className="text-slate-500">Payment Method:</span>
                 <span className="text-slate-900">{selectedReceiptOrder.paymentMethod}</span>
               </div>
               <div className="flex justify-between">
@@ -3056,17 +3155,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                 <span className="text-orange-700 font-bold">{selectedReceiptOrder.trxId}</span>
               </div>
               <div className="flex justify-between border-t border-slate-200 pt-2 text-xs">
-                <span className="text-slate-800 font-bold">মোট ফি:</span>
+                <span className="text-slate-800 font-bold">Total Fee:</span>
                 <span className="text-emerald-700 font-black">৳{selectedReceiptOrder.amount}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">স্ট্যাটাস:</span>
+                <span className="text-slate-500">Status:</span>
                 <span className="text-orange-600 font-bold">{selectedReceiptOrder.status}</span>
               </div>
             </div>
 
             <div className="text-[10px] text-slate-500 text-center">
-              ফেসবুক কনটেন্ট মনিটাইজেশন সার্ভিস · Expart BD
+              Facebook Content Monetization Service · Expart BD
             </div>
 
             <div className="flex items-center gap-2 pt-2">
@@ -3076,14 +3175,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                 className="flex-1 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
               >
                 <Printer className="w-3.5 h-3.5" />
-                <span>প্রিন্ট করুন</span>
+                <span>Print Receipt</span>
               </button>
               <button
                 type="button"
                 onClick={() => setSelectedReceiptOrder(null)}
                 className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer"
               >
-                বন্ধ
+                Close
               </button>
             </div>
 
@@ -3104,7 +3203,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                 </div>
                 <div>
                   <h3 className="font-bold text-base text-white">
-                    সকল অর্ডার বিবরণী ও গ্রাহকের সঠিক লোকেশন
+                    Full Order Details & Client Location
                   </h3>
                   <p className="text-xs text-white/80 font-mono">
                     Order ID: {selectedOrderForDetails.id} · {selectedOrderForDetails.createdAt}
@@ -3126,7 +3225,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
               {/* Order Status Badge & Quick Change */}
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-slate-500 font-semibold">বর্তমান স্ট্যাটাস:</span>
+                  <span className="text-slate-500 font-semibold">Current Status:</span>
                   <span className="px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-800 border border-orange-200">
                     {selectedOrderForDetails.status}
                   </span>
@@ -3141,7 +3240,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     }}
                     className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold border border-blue-200 cursor-pointer"
                   >
-                    ✓ ভেরিফাই
+                    ✓ Approve
                   </button>
                   <button
                     type="button"
@@ -3151,7 +3250,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     }}
                     className="px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 text-xs font-bold border border-purple-200 cursor-pointer"
                   >
-                    ⚙️ প্রসেসিং
+                    ⚙️ In Progress
                   </button>
                   <button
                     type="button"
@@ -3161,7 +3260,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     }}
                     className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold border border-emerald-200 cursor-pointer"
                   >
-                    🎉 সম্পন্ন
+                    🎉 Complete
                   </button>
                   <button
                     type="button"
@@ -3171,7 +3270,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     }}
                     className="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold border border-rose-200 cursor-pointer"
                   >
-                    বাতিল
+                    ✕ Reject
                   </button>
                 </div>
               </div>
@@ -3179,22 +3278,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
               {/* 1. Customer & Page Information */}
               <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-2.5">
                 <span className="text-[10px] uppercase font-bold text-orange-600 tracking-wider block">
-                  গ্রাহক ও ফেসবুক পেজের তথ্য
+                  CUSTOMER & FACEBOOK PAGE INFORMATION
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                   <div>
-                    <span className="text-slate-500 block">গ্রাহকের নাম:</span>
+                    <span className="text-slate-500 block">Customer Name:</span>
                     <strong className="text-slate-900 text-sm">{selectedOrderForDetails.fullName}</strong>
                   </div>
                   <div>
-                    <span className="text-slate-500 block">যোগাযোগ নম্বর:</span>
+                    <span className="text-slate-500 block">Contact Phone:</span>
                     <a href={`tel:${selectedOrderForDetails.phoneNumber}`} className="text-orange-600 font-mono font-bold hover:underline">
                       {selectedOrderForDetails.phoneNumber}
                     </a>
                   </div>
                 </div>
                 <div>
-                  <span className="text-slate-500 block text-xs">ফেসবুক পেজ বা প্রোফাইল লিংক:</span>
+                  <span className="text-slate-500 block text-xs">Facebook Page / Profile Link:</span>
                   <a
                     href={selectedOrderForDetails.pageUrl}
                     target="_blank"
@@ -3210,26 +3309,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
               {/* 2. Payment & TrxID Information */}
               <div className="p-4 rounded-2xl bg-orange-50/40 border border-orange-200 space-y-2.5">
                 <span className="text-[10px] uppercase font-bold text-orange-600 tracking-wider block">
-                  পেমেন্ট ও Transaction ID (TrxID)
+                  PAYMENT & TRANSACTION ID (TRXID)
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                   <div>
-                    <span className="text-slate-500 block">পেমেন্ট মেথড:</span>
+                    <span className="text-slate-500 block">Payment Method:</span>
                     <span className="font-bold text-orange-700">{selectedOrderForDetails.paymentMethod}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500 block">প্রেরক নম্বর:</span>
+                    <span className="text-slate-500 block">Sender Number:</span>
                     <span className="font-mono font-bold text-slate-900">{selectedOrderForDetails.senderNumber}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500 block">প্যাকেজ ফি:</span>
+                    <span className="text-slate-500 block">Package Fee:</span>
                     <span className="font-bold text-emerald-700">৳{selectedOrderForDetails.amount}</span>
                   </div>
                 </div>
                 <div className="pt-2 border-t border-orange-200/60 flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <span className="text-slate-600 block text-xs">
-                      Transaction ID (পপআপের অতিরিক্ত অক্ষরসহ):
+                      Transaction ID (TrxID):
                     </span>
                     <span className="font-mono font-black text-base text-slate-900 tracking-wider">
                       {selectedOrderForDetails.trxId}
@@ -3246,7 +3345,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                     className="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-1 cursor-pointer"
                   >
                     <Copy className="w-3.5 h-3.5" />
-                    <span>TrxID কপি</span>
+                    <span>Copy TrxID</span>
                   </button>
                 </div>
               </div>
@@ -3256,27 +3355,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-[10px] uppercase font-bold text-blue-700 tracking-wider flex items-center gap-1.5">
                     <MapPin className="w-4 h-4 text-blue-600" />
-                    <span>ক্লায়েন্টের সঠিক অবস্থান (Client Exact Location)</span>
+                    <span>Client Exact Location & Device</span>
                   </span>
                   <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold">
                     {selectedOrderForDetails.clientLocation?.source === 'gps'
-                      ? 'GPS নির্ভুল লোকেশন'
-                      : 'আইপি ও নেটওয়ার্ক লোকেশন'}
+                      ? 'GPS Accurate Location'
+                      : 'IP & Network Location'}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   <div>
-                    <span className="text-slate-500 block">শহর ও অঞ্চল:</span>
+                    <span className="text-slate-500 block">City & Region:</span>
                     <strong className="text-slate-900">
                       {selectedOrderForDetails.clientLocation?.formattedAddress ||
-                        `${selectedOrderForDetails.clientLocation?.city || 'ঢাকা'}, ${selectedOrderForDetails.clientLocation?.country || 'বাংলাদেশ'}`}
+                        `${selectedOrderForDetails.clientLocation?.city || 'Dhaka'}, ${selectedOrderForDetails.clientLocation?.country || 'Bangladesh'}`}
                     </strong>
                   </div>
 
                   {selectedOrderForDetails.clientLocation?.latitude && selectedOrderForDetails.clientLocation?.longitude && (
                     <div>
-                      <span className="text-slate-500 block">সঠিক স্থানাঙ্ক (Coordinates):</span>
+                      <span className="text-slate-500 block">Coordinates:</span>
                       <span className="font-mono font-bold text-blue-900">
                         {selectedOrderForDetails.clientLocation.latitude.toFixed(5)}° N, {selectedOrderForDetails.clientLocation.longitude.toFixed(5)}° E
                       </span>
@@ -3285,14 +3384,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
 
                   {selectedOrderForDetails.clientLocation?.ip && (
                     <div>
-                      <span className="text-slate-500 block">ক্লায়েন্ট আইপি (IP):</span>
+                      <span className="text-slate-500 block">Client IP:</span>
                       <span className="font-mono font-semibold text-slate-800">{selectedOrderForDetails.clientLocation.ip}</span>
                     </div>
                   )}
 
                   {selectedOrderForDetails.clientLocation?.device && (
                     <div>
-                      <span className="text-slate-500 block">ডিভাইস ও ব্রাউজার:</span>
+                      <span className="text-slate-500 block">Device & Browser:</span>
                       <span className="text-slate-800">
                         {selectedOrderForDetails.clientLocation.device} ({selectedOrderForDetails.clientLocation.os}) · {selectedOrderForDetails.clientLocation.browser}
                       </span>
@@ -3310,7 +3409,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                       className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
                     >
                       <MapPin className="w-4 h-4" />
-                      <span>গুগল ম্যাপে সরাসরি লোকেশন পিন দেখুন (Google Maps)</span>
+                      <span>View Location Pin on Google Maps</span>
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   </div>
@@ -3320,7 +3419,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
               {/* Customer Notes */}
               {selectedOrderForDetails.notes && (
                 <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-                  <span className="text-[10px] uppercase font-mono text-slate-500 block">গ্রাহকের নোট:</span>
+                  <span className="text-[10px] uppercase font-mono text-slate-500 block">Customer Notes:</span>
                   <p className="text-xs text-slate-700">{selectedOrderForDetails.notes}</p>
                 </div>
               )}
@@ -3338,7 +3437,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                 className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer border border-slate-200"
               >
                 <FileText className="w-3.5 h-3.5" />
-                <span>মানি রিসিট দেখুন</span>
+                <span>View Receipt</span>
               </button>
 
               <button
@@ -3346,7 +3445,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                 onClick={() => setSelectedOrderForDetails(null)}
                 className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-colors cursor-pointer"
               >
-                বন্ধ করুন
+                Close
               </button>
             </div>
 
@@ -3367,7 +3466,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
               <span className="font-bold text-sm text-slate-900 flex items-center gap-2">
                 <Camera className="w-4 h-4 text-orange-600" />
-                <span>গ্রাহকের আপলোডকৃত স্ক্রিনশট</span>
+                <span>Customer Uploaded Screenshot</span>
               </span>
               <button
                 type="button"
@@ -3391,14 +3490,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                 className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span>ডাউনলোড করুন</span>
+                <span>Download</span>
               </a>
               <button
                 type="button"
                 onClick={() => setPreviewScreenshotUrl(null)}
                 className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
               >
-                বন্ধ
+                Close
               </button>
             </div>
           </div>
@@ -3412,9 +3511,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
             <Check className="w-4 h-4 stroke-[3]" />
           </div>
           <div>
-            <div className="font-bold text-white">CSV ফাইল সফলভাবে ডাউনলোড হয়েছে!</div>
+            <div className="font-bold text-white">CSV File Downloaded Successfully!</div>
             <div className="text-[11px] text-slate-300">
-              বুককিপিংয়ের জন্য সকল অর্ডারের তালিকা প্রস্তুত।
+              All orders list prepared for bookkeeping.
             </div>
           </div>
         </div>
@@ -3440,10 +3539,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
 
             <div className="text-center space-y-2">
               <h3 className="font-black text-lg text-slate-900">
-                স্থায়ীভাবে মুছে ফেলতে চান?
+                Permanently Delete This Item?
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed max-w-xs mx-auto">
-                <span className="font-bold text-slate-900">"{deleteConfirmItem.title}"</span> আইটেমটি সিস্টেম ও ডাটাবেজ থেকে অবিলম্বে ডিলিট হয়ে যাবে।
+                <span className="font-bold text-slate-900">"{deleteConfirmItem.title}"</span> will be permanently removed from the system and database.
               </p>
             </div>
 
@@ -3453,7 +3552,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                 onClick={() => setDeleteConfirmItem(null)}
                 className="flex-1 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
               >
-                বাতিল করুন
+                Cancel
               </button>
               <button
                 type="button"
@@ -3461,7 +3560,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                 className="flex-1 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all cursor-pointer shadow-lg shadow-rose-600/30 active:scale-95 flex items-center justify-center gap-2"
               >
                 <Trash2 className="w-4 h-4" />
-                <span>হ্যাঁ, ডিলিট করুন</span>
+                <span>Yes, Delete Permanently</span>
               </button>
             </div>
           </div>
