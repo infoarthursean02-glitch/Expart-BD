@@ -755,6 +755,17 @@ export const recordOrderNowClick = (sourceButton: string = 'General CTA'): void 
   );
 
   try {
+    if (typeof window !== 'undefined' && (window as any).fbq) {
+      (window as any).fbq('track', 'InitiateCheckout', {
+        content_name: 'Facebook Monetization Package',
+        content_category: 'Monetization Service',
+        value: 2999,
+        currency: 'BDT'
+      });
+    }
+  } catch {}
+
+  try {
     const visitorId = localStorage.getItem(CURRENT_VISITOR_ID_KEY);
     if (visitorId) {
       const visitors = getVisitors();

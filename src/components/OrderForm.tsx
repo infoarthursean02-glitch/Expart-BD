@@ -101,6 +101,23 @@ export const OrderForm: React.FC<OrderFormProps> = () => {
     setSubmittedOrder(newOrder);
     setIsSubmitting(false);
 
+    // Meta Pixel Conversion Tracking
+    try {
+      if (typeof window !== 'undefined' && (window as any).fbq) {
+        (window as any).fbq('track', 'Purchase', {
+          content_name: 'Facebook Monetization Package',
+          content_type: 'product',
+          value: newOrder.amount || 2999,
+          currency: 'BDT'
+        });
+        (window as any).fbq('track', 'Lead', {
+          content_name: 'Facebook Monetization Package',
+          value: newOrder.amount || 2999,
+          currency: 'BDT'
+        });
+      }
+    } catch {}
+
     recordActivity(
       'order',
       'Order & TrxID Submitted',
