@@ -81,7 +81,7 @@ export const DEFAULT_WEB_CONTENT: WebContent = {
   heroSubtitle: 'Facebook Content Monetization Service · Expart BD',
   heroDescription: 'আপনার Facebook Content Monetization শুরু করার জন্য প্রয়োজনীয় সার্ভিস এখন এক প্যাকেজে। বিকাশ ও নগদ পেমেন্ট করে TrxID দিন এবং স্বয়ংক্রিয় ভেরিফিকেশনে সার্ভিস গ্রহণ করুন।',
   heroPriceBadge: 'প্যাকেজ মূল্য: মাত্র ৳২,৯৯৯ (এককালীন সার্ভিস ফি)',
-  heroButtonText: 'অর্ডার করুন ও TrxID দিন',
+  heroButtonText: 'অর্ডার করুন',
 
   // Why Us
   whyUsSectionTitle: 'কেন আমাদের ফেসবুক মনিটাইজেশন সার্ভিস বেছে নেবেন?',

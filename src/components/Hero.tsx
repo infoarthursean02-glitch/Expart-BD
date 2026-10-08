@@ -72,7 +72,7 @@ export const Hero: React.FC<HeroProps> = ({ onOrderClick }) => {
             onClick={onOrderClick}
             className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-orange-600 via-rose-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-extrabold text-sm sm:text-base shadow-xl shadow-orange-600/25 hover:shadow-orange-600/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
-            <span>অর্ডার করুন ও TrxID দিন</span>
+            <span>অর্ডার করুন</span>
             <ArrowRight className="w-4 h-4" />
           </button>
 
