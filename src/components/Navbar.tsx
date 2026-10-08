@@ -107,7 +107,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOrderClick }) => {
         {mobileMenuOpen && (
           <div className="lg:hidden mt-3 pt-3 pb-4 border-t border-slate-200 bg-white rounded-2xl px-4 shadow-xl">
             <nav className="flex flex-col space-y-2">
-              {navLinks.map((link) => (
+              {navLinks.filter((link) => link.href !== '#creators').map((link) => (
                 <a
                   key={link.name}
                   href={link.href}

@@ -42,7 +42,7 @@ export const TargetAudience: React.FC = () => {
   ];
 
   return (
-    <section id="creators" className="py-20 sm:py-26 relative overflow-hidden bg-white">
+    <section id="creators" className="hidden md:block py-20 sm:py-26 relative overflow-hidden bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}

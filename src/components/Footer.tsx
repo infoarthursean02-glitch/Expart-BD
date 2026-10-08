@@ -39,7 +39,7 @@ export const Footer: React.FC = () => {
               <li>
                 <a href="#how-it-works" className="hover:text-orange-400 transition-colors">যেভাবে কাজ করে</a>
               </li>
-              <li>
+              <li className="hidden md:list-item">
                 <a href="#creators" className="hover:text-orange-400 transition-colors">ক্রিয়েটরদের জন্য</a>
               </li>
               <li>
