@@ -62,32 +62,19 @@ if (typeof window !== 'undefined') {
 
 export const syncOrdersWithBackend = async (): Promise<OrderRecord[]> => {
   try {
-    const res = await fetch('/api/orders');
+    const res = await fetch(`/api/orders?_t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' },
+    });
     if (res.ok) {
       const data = await res.json();
       if (data.success && Array.isArray(data.orders)) {
-        const serverOrders: OrderRecord[] = data.orders;
-        const local = getOrders();
-
-        const map = new Map<string, OrderRecord>();
-        // Server orders are the authoritative source
-        serverOrders.forEach((o) => map.set(o.id, o));
-
-        // Add any local unsynced new orders
-        local.forEach((o) => {
-          if (!map.has(o.id)) {
-            map.set(o.id, o);
-            fetch('/api/orders', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(o),
-            }).catch(() => {});
-          }
-        });
-
-        const merged = Array.from(map.values());
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-        return merged;
+        const deletedIds = getDeletedOrderIds();
+        const serverOrders: OrderRecord[] = data.orders.filter(
+          (o: OrderRecord) => !deletedIds.includes(o.id) && !['EXP-9142', 'EXP-8820', 'EXP-7519'].includes(o.id)
+        );
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(serverOrders));
+        return serverOrders;
       }
     }
   } catch (err) {
@@ -151,8 +138,9 @@ export const getOrders = (): OrderRecord[] => {
       return [];
     }
     const parsed: OrderRecord[] = JSON.parse(data);
+    const deletedIds = getDeletedOrderIds();
     const filtered = parsed.filter(
-      (o) => !['EXP-9142', 'EXP-8820', 'EXP-7519'].includes(o.id)
+      (o) => !deletedIds.includes(o.id) && !['EXP-9142', 'EXP-8820', 'EXP-7519'].includes(o.id)
     );
     return filtered;
   } catch (e) {
@@ -177,11 +165,11 @@ export const saveOrder = (order: OrderRecord): void => {
     window.dispatchEvent(new CustomEvent('expart_order_changed'));
     orderBroadcast?.postMessage({ type: 'ORDER_SYNC', orderId: order.id });
 
-    // Send to backend
+    // Send to backend with isNewSubmission flag
     fetch('/api/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(order),
+      body: JSON.stringify({ ...order, isNewSubmission: true }),
     }).catch((err) => {
       console.warn('Backend order sync warning:', err);
     });
@@ -250,7 +238,7 @@ export const updateOrderLocation = (
   }
 };
 
-export const deleteOrder = (id: string): void => {
+export const deleteOrder = async (id: string): Promise<void> => {
   try {
     addDeletedOrderId(id);
     const current = getOrders();
@@ -259,9 +247,9 @@ export const deleteOrder = (id: string): void => {
     window.dispatchEvent(new CustomEvent('expart_order_changed'));
     orderBroadcast?.postMessage({ type: 'ORDER_SYNC', deletedId: id });
 
-    fetch(`/api/orders/${id}`, {
+    await fetch(`/api/orders/${id}`, {
       method: 'DELETE',
-    }).catch(() => {});
+    });
   } catch (e) {
     console.error('Error deleting order', e);
   }

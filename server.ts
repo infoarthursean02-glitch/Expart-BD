@@ -8,6 +8,33 @@ const PORT = 3000;
 
 app.use(express.json({ limit: '15mb' }));
 
+// Disable browser caching for all /api endpoints to ensure 100% fresh data
+app.use('/api', (_req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
+
+// SSE Real-time client connection pool
+let sseClients: Response[] = [];
+
+function broadcastSSE(type: string, data: any) {
+  const payload = JSON.stringify({ type, data, timestamp: Date.now() });
+  sseClients.forEach((client) => {
+    try {
+      client.write(`data: ${payload}\n\n`);
+    } catch {
+      // client disconnected
+    }
+  });
+}
+
+// Keep SSE connections active with a heartbeat every 15s
+setInterval(() => {
+  broadcastSSE('heartbeat', { time: Date.now() });
+}, 15000);
+
 // Persistence directory
 const DATA_DIR = path.resolve(process.cwd(), 'data');
 if (!fs.existsSync(DATA_DIR)) {
@@ -99,6 +126,22 @@ if (!fs.existsSync(SETTINGS_FILE)) {
 }
 
 // API Routes
+app.get('/api/realtime-stream', (req: Request, res: Response) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache, no-transform',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+
+  res.write(`data: ${JSON.stringify({ type: 'connected', time: Date.now() })}\n\n`);
+  sseClients.push(res);
+
+  req.on('close', () => {
+    sseClients = sseClients.filter((client) => client !== res);
+  });
+});
+
 app.get('/api/orders', (_req: Request, res: Response) => {
   const orders: any[] = readJsonFile(ORDERS_FILE, []);
   const deleted: string[] = readJsonFile(DELETED_ORDERS_FILE, []);
@@ -113,9 +156,16 @@ app.post('/api/orders', (req: Request, res: Response) => {
     return;
   }
 
-  // Remove from deleted list if re-added
   const deleted: string[] = readJsonFile(DELETED_ORDERS_FILE, []);
-  if (deleted.includes(newOrder.id)) {
+  // If permanently deleted and not explicitly un-deleting, do not resurrect
+  if (deleted.includes(newOrder.id) && !newOrder.forceRestore) {
+    const orders: any[] = readJsonFile(ORDERS_FILE, []);
+    const filtered = orders.filter((o) => !deleted.includes(o.id));
+    res.json({ success: true, ignored: true, orders: filtered });
+    return;
+  }
+
+  if (newOrder.forceRestore && deleted.includes(newOrder.id)) {
     const updatedDeleted = deleted.filter((d) => d !== newOrder.id);
     writeJsonFile(DELETED_ORDERS_FILE, updatedDeleted);
   }
@@ -127,6 +177,7 @@ app.post('/api/orders', (req: Request, res: Response) => {
     : [newOrder, ...currentOrders];
 
   writeJsonFile(ORDERS_FILE, updated);
+  broadcastSSE('orders', updated);
   res.json({ success: true, order: newOrder, orders: updated });
 });
 
@@ -136,6 +187,7 @@ app.patch('/api/orders/:id', (req: Request, res: Response) => {
   const currentOrders: any[] = readJsonFile(ORDERS_FILE, []);
   const updated = currentOrders.map((o) => (o.id === id ? { ...o, ...updates } : o));
   writeJsonFile(ORDERS_FILE, updated);
+  broadcastSSE('orders', updated);
   res.json({ success: true, orders: updated });
 });
 
@@ -151,6 +203,7 @@ app.delete('/api/orders/:id', (req: Request, res: Response) => {
     writeJsonFile(DELETED_ORDERS_FILE, deleted);
   }
 
+  broadcastSSE('orders', updated);
   res.json({ success: true, orders: updated });
 });
 
@@ -162,6 +215,7 @@ app.get('/api/settings', (_req: Request, res: Response) => {
 app.post('/api/settings', (req: Request, res: Response) => {
   const newSettings = req.body;
   writeJsonFile(SETTINGS_FILE, newSettings);
+  broadcastSSE('settings', newSettings);
   res.json({ success: true, settings: newSettings });
 });
 
@@ -186,6 +240,7 @@ app.post('/api/chats', (req: Request, res: Response) => {
     updated = [session, ...currentChats];
   }
   writeJsonFile(CHATS_FILE, updated);
+  broadcastSSE('chats', updated);
   res.json({ success: true, chats: updated });
 });
 
@@ -210,6 +265,7 @@ app.post('/api/features', (req: Request, res: Response) => {
   const exists = current.some((f: any) => f.id === feature.id);
   const updated = exists ? current.map((f: any) => f.id === feature.id ? feature : f) : [...current, feature];
   writeJsonFile(FEATURES_FILE, updated);
+  broadcastSSE('features', updated);
   res.json({ success: true, features: updated });
 });
 
@@ -218,6 +274,7 @@ app.delete('/api/features/:id', (req: Request, res: Response) => {
   const current = readJsonFile(FEATURES_FILE, DEFAULT_PACKAGE_FEATURES);
   const updated = current.filter((f: any) => f.id !== id);
   writeJsonFile(FEATURES_FILE, updated);
+  broadcastSSE('features', updated);
   res.json({ success: true, features: updated });
 });
 
@@ -233,6 +290,7 @@ app.post('/api/visitors', (req: Request, res: Response) => {
   const exists = current.some((v: any) => v.id === visitor.id);
   const updated = exists ? current.map((v: any) => v.id === visitor.id ? visitor : v) : [visitor, ...current];
   writeJsonFile(VISITORS_FILE, updated);
+  broadcastSSE('visitors', updated);
   res.json({ success: true, visitors: updated });
 });
 
@@ -247,6 +305,7 @@ app.post('/api/activities', (req: Request, res: Response) => {
   const current = readJsonFile(ACTIVITIES_FILE, []);
   const updated = [activity, ...current.slice(0, 99)];
   writeJsonFile(ACTIVITIES_FILE, updated);
+  broadcastSSE('activities', updated);
   res.json({ success: true, activities: updated });
 });
 

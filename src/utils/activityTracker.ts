@@ -181,7 +181,10 @@ export const getActivities = (): ActivityLogRecord[] => {
 
 export const syncVisitorsWithBackend = async (): Promise<WebVisitorRecord[]> => {
   try {
-    const res = await fetch('/api/visitors');
+    const res = await fetch(`/api/visitors?_t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' },
+    });
     if (res.ok) {
       const data = await res.json();
       if (data.success && Array.isArray(data.visitors) && data.visitors.length > 0) {
@@ -197,7 +200,10 @@ export const syncVisitorsWithBackend = async (): Promise<WebVisitorRecord[]> => 
 
 export const syncActivitiesWithBackend = async (): Promise<ActivityLogRecord[]> => {
   try {
-    const res = await fetch('/api/activities');
+    const res = await fetch(`/api/activities?_t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' },
+    });
     if (res.ok) {
       const data = await res.json();
       if (data.success && Array.isArray(data.activities) && data.activities.length > 0) {
