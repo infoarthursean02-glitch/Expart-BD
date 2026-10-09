@@ -30,8 +30,8 @@ export const Hero: React.FC<HeroProps> = ({ onOrderClick }) => {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6 sm:space-y-8">
         
-        {/* Trust Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-800 text-xs sm:text-sm font-bold tracking-wide mx-auto">
+        {/* Trust Badge (Hidden on mobile per user request) */}
+        <div className="hidden md:inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-800 text-xs sm:text-sm font-bold tracking-wide mx-auto">
           <ExpartBDLogo variant="icon" iconClassName="w-4 h-4 shrink-0" />
           <span>Expart BD · অফিশিয়াল ফেসবুক মনিটাইজেশন সেটআপ</span>
         </div>
@@ -57,8 +57,8 @@ export const Hero: React.FC<HeroProps> = ({ onOrderClick }) => {
             </span>
           </div>
 
-          {/* bKash & Nagad Badge */}
-          <div className="px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-2 text-xs">
+          {/* bKash & Nagad Badge (Hidden on mobile per user request) */}
+          <div className="hidden md:flex px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 items-center gap-2 text-xs">
             <CreditCard className="w-4 h-4 text-orange-600" />
             <span className="text-slate-700 font-semibold">পেমেন্ট মাধ্যম: </span>
             <span className="font-bold text-slate-900">বিকাশ ও নগদ (Send Money)</span>
