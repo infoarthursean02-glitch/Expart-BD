@@ -281,7 +281,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
     const handleVisitorChange = () => setVisitors(getVisitors());
     const handleActivityChange = () => setActivities(getActivities());
 
-    // 2. Strict 3-second live auto-polling loop for all live data
+    // 2. Ultra-responsive 1.5-second live auto-polling loop for all live data (zero time drop)
     const pollInterval = setInterval(() => {
       syncOrdersWithBackend().then((latest) => {
         if (Array.isArray(latest)) setOrders(latest);
@@ -298,7 +298,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
           if (d.success && Array.isArray(d.chats)) setChatSessions(d.chats);
         })
         .catch(() => {});
-    }, 3000);
+    }, 1500);
 
     window.addEventListener('expart_order_changed', handleOrderChange);
     window.addEventListener('expart_settings_changed', handleSettingsChange);
@@ -2538,13 +2538,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                             }`}
                           >
                             <div className="flex items-center justify-between gap-2 mb-1">
-                              <span className="font-bold text-xs text-slate-900 truncate">
-                                {sess.clientName || 'Customer (Online Visitor)'}
-                              </span>
+                              <div className="flex items-center gap-1.5 truncate">
+                                <span className="font-bold text-xs text-slate-900 truncate">
+                                  {sess.clientName || 'Customer (Online Visitor)'}
+                                </span>
+                                {sess.isEscalated && (
+                                  <span className="px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[9px] font-bold shrink-0 animate-pulse">
+                                    অ্যাডমিন রিভিউ
+                                  </span>
+                                )}
+                              </div>
                               <span className="text-[10px] text-slate-400 font-mono shrink-0">
                                 {sess.updatedAt}
                               </span>
                             </div>
+
+                            {sess.clientPhone && (
+                              <div className="text-[11px] text-emerald-700 font-bold flex items-center gap-1 mb-1 truncate">
+                                <Phone className="w-3 h-3 shrink-0" />
+                                <span>{sess.clientPhone}</span>
+                              </div>
+                            )}
 
                             {sess.clientLocation?.city && (
                               <div className="text-[10px] text-blue-600 flex items-center gap-1 mb-1 font-medium truncate">
@@ -2590,10 +2604,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                               <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
                                 Active
                               </span>
+                              {currentChat.isEscalated && (
+                                <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold animate-pulse">
+                                  🚨 গ্রাহকের স্পেসিফিক সমস্যা
+                                </span>
+                              )}
                             </div>
-                            <span className="text-[10px] text-slate-400 font-mono">
-                              ID: {currentChat.id} · Started: {currentChat.createdAt}
-                            </span>
+                            <div className="flex flex-wrap items-center gap-3 mt-1 text-xs">
+                              <span className="text-[10px] text-slate-400 font-mono">
+                                ID: {currentChat.id} · Started: {currentChat.createdAt}
+                              </span>
+                              {currentChat.clientPhone && (
+                                <span className="text-emerald-700 font-bold flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+                                  <Phone className="w-3 h-3" />
+                                  <span>ফোন: {currentChat.clientPhone}</span>
+                                </span>
+                              )}
+                              {currentChat.clientPageUrl && (
+                                <a
+                                  href={currentChat.clientPageUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 font-medium hover:underline inline-flex items-center gap-1"
+                                >
+                                  <Globe className="w-3 h-3" />
+                                  <span>ফেসবুক পেজ দেখুন</span>
+                                </a>
+                              )}
+                            </div>
                           </div>
 
                           {currentChat.clientLocation && (

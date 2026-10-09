@@ -19,6 +19,16 @@ export const saveChatSessions = (sessions: ChatSession[]): void => {
   try {
     localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(sessions));
     window.dispatchEvent(new CustomEvent('expart_chat_changed'));
+
+    // Instant server-side synchronization and SSE push
+    if (sessions.length > 0) {
+      const mostRecent = sessions[0];
+      fetch('/api/chats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mostRecent),
+      }).catch(() => {});
+    }
   } catch (e) {
     console.error('Error saving chat sessions', e);
   }
@@ -52,7 +62,7 @@ export const getOrCreateCurrentSession = (location?: ClientLocationData): ChatSe
         {
           id: `msg-${Date.now()}-welcome`,
           sender: 'bot',
-          text: 'আসসালামু আলাইকুম! Expart BD লাইভ সাপোর্ট টিমে স্বাগতম। আমাদের প্রতিনিধি অ্যাক্টিভ আছেন, আপনি সাজেস্টেড প্রশ্ন করুন অথবা আপনার প্রশ্নটি লিখুন—আমরা সঙ্গে সঙ্গে বিস্তারিত উত্তর দেব।',
+          text: 'আসসালামু আলাইকুম! Expart BD লাইভ সাপোর্ট টিমে স্বাগতম। ফেসবুক কনটেন্ট মনিটাইজেশন বা পেজ সংক্রান্ত যেকোনো প্রশ্ন থাকলে নিচে লিখুন—আমরা সঙ্গে সঙ্গে বিস্তারিত উত্তর দেব।',
           timestamp: now,
         },
       ],
@@ -120,6 +130,9 @@ export const sendClientMessage = async (
     const result = await generateAutoReply(text);
     botReplyText = result.text;
     botActionType = result.actionType;
+    if (result.isEscalation) {
+      session.isEscalated = true;
+    }
   }
 
   const botMsg: ChatMessage = {
@@ -127,6 +140,7 @@ export const sendClientMessage = async (
     sender: 'bot',
     text: botReplyText,
     actionType: botActionType,
+    isEscalation: session.isEscalated,
     timestamp: new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' }),
   };
 
@@ -153,6 +167,24 @@ export const sendAdminReply = (sessionId: string, text: string): ChatSession | n
   session.messages.push(adminMsg);
   session.updatedAt = now;
   session.unreadCountForAdmin = 0;
+
+  saveChatSessions([...sessions]);
+  return session;
+};
+
+export const updateClientContactInfo = (
+  sessionId: string,
+  info: { name?: string; phone?: string; pageUrl?: string }
+): ChatSession | null => {
+  const sessions = getChatSessions();
+  const session = sessions.find((s) => s.id === sessionId);
+  if (!session) return null;
+
+  if (info.name && info.name.trim()) session.clientName = info.name.trim();
+  if (info.phone && info.phone.trim()) session.clientPhone = info.phone.trim();
+  if (info.pageUrl && info.pageUrl.trim()) session.clientPageUrl = info.pageUrl.trim();
+  session.isEscalated = true;
+  session.updatedAt = new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' });
 
   saveChatSessions([...sessions]);
   return session;

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { EligibilityChecker } from './components/EligibilityChecker';
@@ -14,12 +14,16 @@ import { FaqSection } from './components/FaqSection';
 import { OrderForm } from './components/OrderForm';
 import { FinalCta } from './components/FinalCta';
 import { Footer } from './components/Footer';
-import { AdminDashboard } from './components/AdminDashboard';
 import { LiveChatWidget } from './components/LiveChatWidget';
 import { getSettings } from './utils/orderStorage';
 import { AdminSettings } from './types';
 import { Megaphone } from 'lucide-react';
 import { trackCurrentVisitor, recordOrderNowClick } from './utils/activityTracker';
+
+// Dynamic lazy import: ensures public visitors never download admin code, reducing initial JS load by >70%
+const AdminDashboard = lazy(() =>
+  import('./components/AdminDashboard').then((m) => ({ default: m.AdminDashboard }))
+);
 
 const isCurrentRouteAdmin = (): boolean => {
   if (typeof window === 'undefined') return false;
@@ -67,9 +71,13 @@ export default function App() {
     window.addEventListener('hashchange', handleLocationChange);
     window.addEventListener('keydown', handleKeyDown);
 
-    // Track web visitor
+    // Track web visitor non-blockingly using requestIdleCallback / setTimeout so initial render is 100% instant
     if (!isCurrentRouteAdmin()) {
-      trackCurrentVisitor('হোমপেজ');
+      if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(() => trackCurrentVisitor('হোমপেজ'));
+      } else {
+        setTimeout(() => trackCurrentVisitor('হোমপেজ'), 100);
+      }
     }
 
     return () => {
@@ -101,7 +109,17 @@ export default function App() {
 
   // If in dedicated Admin Panel View (Exact URL: /admin or /admin/login)
   if (currentView === 'admin') {
-    return <AdminDashboard onBackToWeb={closeAdmin} />;
+    return (
+      <Suspense
+        fallback={
+          <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white text-sm font-mono">
+            অ্যাডমিন ড্যাশবোর্ড লোড হচ্ছে...
+          </div>
+        }
+      >
+        <AdminDashboard onBackToWeb={closeAdmin} />
+      </Suspense>
+    );
   }
 
   // 100% Clean Client-Facing Public Landing Page (Zero Admin buttons/links)

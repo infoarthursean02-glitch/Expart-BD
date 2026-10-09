@@ -66,14 +66,18 @@ export interface ChatMessage {
   sender: 'client' | 'bot' | 'admin';
   text: string;
   timestamp: string;
-  actionType?: 'upload_screenshot' | 'send_page_link' | 'order_package';
+  actionType?: 'upload_screenshot' | 'send_page_link' | 'order_package' | 'request_contact_info';
   attachmentUrl?: string;
   attachmentName?: string;
+  isEscalation?: boolean;
 }
 
 export interface ChatSession {
   id: string;
   clientName?: string;
+  clientPhone?: string;
+  clientPageUrl?: string;
+  isEscalated?: boolean;
   clientLocation?: ClientLocationData;
   createdAt: string;
   updatedAt: string;

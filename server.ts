@@ -324,8 +324,20 @@ async function main() {
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static(path.resolve(process.cwd(), 'dist')));
+    // Serve production assets with 1-year immutable caching for fingerprinted assets, plus fast revalidation for HTML
+    app.use(
+      express.static(path.resolve(process.cwd(), 'dist'), {
+        maxAge: '1y',
+        immutable: true,
+        setHeaders: (res, filePath) => {
+          if (filePath.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+          }
+        },
+      })
+    );
     app.get('*', (_req: Request, res: Response) => {
+      res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
       res.sendFile(path.resolve(process.cwd(), 'dist/index.html'));
     });
   }

@@ -11,6 +11,28 @@ export default defineConfig(() => {
         '@': import.meta.dirname || path.resolve('.'),
       },
     },
+    build: {
+      cssCodeSplit: true,
+      minify: 'esbuild',
+      target: 'es2020',
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            // Put react and core libraries in vendor chunk
+            if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+              return 'vendor-react';
+            }
+            if (id.includes('node_modules/lucide-react')) {
+              return 'vendor-icons';
+            }
+            // Isolate heavy admin dashboard and admin components
+            if (id.includes('AdminDashboard') || id.includes('TrafficAnalyticsReport')) {
+              return 'admin-panel';
+            }
+          },
+        },
+      },
+    },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modify—file watching is disabled to prevent flickering during agent edits.

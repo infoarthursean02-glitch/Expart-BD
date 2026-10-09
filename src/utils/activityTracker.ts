@@ -5,6 +5,31 @@ const VISITORS_KEY = 'expart_bd_visitors_v2';
 const ACTIVITIES_KEY = 'expart_bd_activities_v2';
 const CURRENT_VISITOR_ID_KEY = 'expart_bd_visitor_session_id';
 
+// BroadcastChannel for instant zero-latency cross-tab sync
+const activityBroadcast = typeof window !== 'undefined' && 'BroadcastChannel' in window
+  ? new BroadcastChannel('expart_live_activity_sync_channel')
+  : null;
+
+if (activityBroadcast) {
+  activityBroadcast.onmessage = (event) => {
+    if (event.data?.type === 'VISITOR_SYNC') {
+      window.dispatchEvent(new CustomEvent('expart_visitor_changed'));
+    } else if (event.data?.type === 'ACTIVITY_SYNC') {
+      window.dispatchEvent(new CustomEvent('expart_activity_changed'));
+    }
+  };
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === VISITORS_KEY) {
+      window.dispatchEvent(new CustomEvent('expart_visitor_changed'));
+    } else if (e.key === ACTIVITIES_KEY) {
+      window.dispatchEvent(new CustomEvent('expart_activity_changed'));
+    }
+  });
+}
+
 // Helper to format date as YYYY-MM-DD
 export const getFormattedDateStr = (date: Date = new Date()): string => {
   const y = date.getFullYear();
@@ -33,24 +58,33 @@ export const detectTrafficSource = (): {
   const utmSource = searchParams.get('utm_source') || undefined;
   const utmMedium = searchParams.get('utm_medium') || undefined;
   const utmCampaign = searchParams.get('utm_campaign') || undefined;
+  const fbclid = searchParams.get('fbclid') || undefined;
+  const gclid = searchParams.get('gclid') || searchParams.get('wbraid') || searchParams.get('gbraid') || undefined;
+  const ttclid = searchParams.get('ttclid') || undefined;
 
   let source = 'Direct / Organic';
-  if (utmSource) {
+  if (fbclid) {
+    source = 'Meta Ads (Facebook/Instagram)';
+  } else if (gclid) {
+    source = 'Google Ads';
+  } else if (ttclid) {
+    source = 'TikTok Ads';
+  } else if (utmSource) {
     source = `Campaign: ${utmSource}`;
   } else if (referrer) {
     const refLower = referrer.toLowerCase();
     if (refLower.includes('facebook') || refLower.includes('fb.me') || refLower.includes('fb.com')) {
       source = 'Facebook (Meta)';
+    } else if (refLower.includes('instagram') || refLower.includes('ig.me')) {
+      source = 'Instagram';
+    } else if (refLower.includes('tiktok')) {
+      source = 'TikTok';
     } else if (refLower.includes('google')) {
       source = 'Google Search';
     } else if (refLower.includes('youtube')) {
       source = 'YouTube';
     } else if (refLower.includes('whatsapp') || refLower.includes('wa.me')) {
       source = 'WhatsApp';
-    } else if (refLower.includes('instagram')) {
-      source = 'Instagram';
-    } else if (refLower.includes('tiktok')) {
-      source = 'TikTok';
     } else {
       try {
         const host = new URL(referrer).hostname;
@@ -730,6 +764,7 @@ export const recordActivity = (
     const updated = [newAct, ...current.slice(0, 499)];
     localStorage.setItem(ACTIVITIES_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('expart_activity_changed'));
+    activityBroadcast?.postMessage({ type: 'ACTIVITY_SYNC' });
 
     // Sync to backend
     fetch('/api/activities', {
@@ -830,6 +865,7 @@ export const trackCurrentVisitor = async (pageName: string = 'Homepage'): Promis
       const updated = visitors.map((v) => (v.id === visitorId ? updatedVis : v));
       localStorage.setItem(VISITORS_KEY, JSON.stringify(updated));
       window.dispatchEvent(new CustomEvent('expart_visitor_changed'));
+      activityBroadcast?.postMessage({ type: 'VISITOR_SYNC' });
 
       fetch('/api/visitors', {
         method: 'POST',
@@ -868,6 +904,7 @@ export const trackCurrentVisitor = async (pageName: string = 'Homepage'): Promis
       const updated = [newVisitor, ...visitors];
       localStorage.setItem(VISITORS_KEY, JSON.stringify(updated));
       window.dispatchEvent(new CustomEvent('expart_visitor_changed'));
+      activityBroadcast?.postMessage({ type: 'VISITOR_SYNC' });
 
       fetch('/api/visitors', {
         method: 'POST',

@@ -455,24 +455,28 @@ export const AUTOMATED_QA_LIST: AutomatedQAItem[] = [
 
 export interface AutoReplyResult {
   text: string;
-  actionType?: 'upload_screenshot' | 'send_page_link' | 'order_package';
+  actionType?: 'upload_screenshot' | 'send_page_link' | 'order_package' | 'request_contact_info';
   actionPrompt?: string;
   matchedQuestion?: string;
+  isEscalation?: boolean;
 }
 
 /**
  * Intelligent automatic response matching
+ * 1. Matches keywords from the official QA database instantly
+ * 2. Never displays any phone numbers
+ * 3. Detects complex/unusual problems and asks user for contact info (Name, Phone, Page Link) so Admin can review and reach out
  */
 export const generateAutoReply = async (userMessage: string): Promise<AutoReplyResult> => {
   const clean = userMessage.trim().toLowerCase();
 
   if (!clean) {
     return {
-      text: 'অনুগ্রহ করে আপনার প্রশ্নটি লিখুন বা প্রশ্ন তালিকা থেকে নির্বাচন করুন। আমি এখনই উত্তর দিচ্ছি।',
+      text: 'অনুগ্রহ করে আপনার প্রশ্নটি লিখুন। আপনি আপনার পেজের সমস্যা বিস্তারিত লিখলেই আমরা প্রাসঙ্গিক সমাধান জানিয়ে দেব।',
     };
   }
 
-  // 1. Exact or near-exact question match
+  // 1. Exact or near-exact question match from knowledge base
   for (const item of AUTOMATED_QA_LIST) {
     const qLower = item.question.toLowerCase();
     if (clean === qLower || clean.includes(qLower) || qLower.includes(clean)) {
@@ -485,7 +489,7 @@ export const generateAutoReply = async (userMessage: string): Promise<AutoReplyR
     }
   }
 
-  // 2. Keyword score matching across all 50 items
+  // 2. Keyword score matching across all official items
   let bestItem: AutomatedQAItem | null = null;
   let bestScore = 0;
 
@@ -493,11 +497,11 @@ export const generateAutoReply = async (userMessage: string): Promise<AutoReplyR
     let score = 0;
     for (const kw of item.keywords) {
       if (clean.includes(kw.toLowerCase())) {
-        score += 2;
+        score += 3;
       }
     }
 
-    // Also check partial word matches in question
+    // Also check tokenized words in question
     const qWords = item.question.toLowerCase().split(/\s+/);
     for (const word of qWords) {
       if (word.length > 3 && clean.includes(word)) {
@@ -511,6 +515,7 @@ export const generateAutoReply = async (userMessage: string): Promise<AutoReplyR
     }
   }
 
+  // If good keyword match found, deliver instant answer
   if (bestItem && bestScore >= 2) {
     return {
       text: bestItem.answer,
@@ -520,19 +525,34 @@ export const generateAutoReply = async (userMessage: string): Promise<AutoReplyR
     };
   }
 
-  // 3. General greeting or inquiry
-  if (/^(hi|hello|hey|সালাম|আসসালামু আলাইকুম)/i.test(clean)) {
+  // 3. General greeting or basic inquiry
+  if (/^(hi|hello|hey|সালাম|আসসালামু আলাইকুম|hlo|hii|good morning|good evening)/i.test(clean)) {
     return {
-      text: 'আসসালামু আলাইকুম! Expart BD-তে স্বাগতম। ফেসবুক মনিটাইজেশন সংক্রান্ত যেকোনো প্রশ্ন থাকলে আমাদের প্রশ্ন তালিকা (❓ আইকন) থেকে সিলেক্ট করুন অথবা নিচে লিখুন—আমি সঙ্গে সঙ্গে বিস্তারিত উত্তর দেব।',
+      text: 'আসসালামু আলাইকুম! Expart BD লাইভ সাপোর্টে স্বাগতম। ফেসবুক কনটেন্ট মনিটাইজেশন, পলিসি ইস্যু বা সেটআপ সংক্রান্ত আপনার যেকোনো সমস্যা বা প্রশ্ন এখানে বিস্তারিত লিখুন—আমরা সঙ্গে সঙ্গে উত্তর ও সমাধান জানিয়ে দেব।',
       actionType: 'send_page_link',
       actionPrompt: 'আপনার ফেসবুক পেজ লিংক দিন',
     };
   }
 
-  // 4. Default helpful answer
+  // 4. Escalation Trigger: Unusual / complex / specific / contact / admin-needed issue
+  // When visitor mentions unusual difficulties, hacking, copyright strikes, legal issues, or questions that don't match standard Q&A
+  const isUnusualOrComplex = 
+    /অস্বাভাবিক|সমস্যা|ঝামেলা|হ্যাক|হ্যাকড|আইনি|কোর্ট|স্ট্রাইক|ব্লক|ব্যান|স্থগিত|রেস্ট্রিক্ট|জরুরি|অ্যাডমিন|কথা বলতে চাই|কল দিতে|ফোন দিতে|অভিযোগ|কথা বলা যাবে|মানুষের সাথে|contact|talk|call|admin|problem|complex|strike|hacked|stolen|ban/i.test(clean) ||
+    clean.length > 40;
+
+  if (isUnusualOrComplex) {
+    return {
+      text: 'আপনার বিষয়টি একটি বিশেষ ও স্পেসিফিক সমস্যা। আমাদের সিস্টেম এটি রেকর্ড করেছে এবং আমাদের অ্যাডমিন সরাসরি এটি তদন্ত করে দেখবেন।\n\nঅনুগ্রহ করে নিচে আপনার নাম, যোগাযোগ নম্বর ও পেজ লিংক দিন। অ্যাডমিন আপনার তথ্য পর্যালোচনা করে সরাসরি আপনার সাথে যোগাযোগ করবেন।',
+      actionType: 'request_contact_info',
+      actionPrompt: 'আপনার যোগাযোগের তথ্য দিন',
+      isEscalation: true,
+    };
+  }
+
+  // 5. Default intelligent response (strictly no phone number)
   return {
-    text: `আপনার প্রশ্নের জন্য ধন্যবাদ! ফেসবুক মনিটাইজেশন সংক্রান্ত যেকোনো তথ্যের জন্য আপনি উপরের ❓ প্রশ্ন তালিকা আইকনে ক্লিক করে সরাসরি প্রাসঙ্গিক প্রশ্ন বেছে নিতে পারেন। আমাদের প্যাকেজ মূল্য এককালীন মাত্র ৳২,৯৯৯। আপনার পেজের লিংক বা কোনো নোটিশের স্ক্রিনশট দিলে আমরা দ্রুত রিভিউ করে উপযুক্ত সমাধান জানাব।`,
+    text: 'আপনার প্রশ্নের জন্য ধন্যবাদ! Expart BD-এর বিশেষায়িত ফেসবুক কনটেন্ট মনিটাইজেশন প্যাকেজ (৳২,৯৯৯) সংক্রান্ত যেকোনো তথ্য জানতে চাইলে বা আপনার পেজের স্পেসিফিক কোনো সমস্যা থাকলে বিস্তারিত জানাতে পারেন। আপনি পেজ লিংক অথবা ড্যাশবোর্ডের স্ক্রিনশট দিলেও আমরা সাথে সাথে রিভিউ করে সমাধান জানিয়ে দেব।',
     actionType: 'upload_screenshot',
-    actionPrompt: 'প্রাসঙ্গিক স্ক্রিনশট আপলোড করুন',
+    actionPrompt: 'ড্যাশবোর্ড স্ক্রিনশট বা পেজ লিংক দিন',
   };
 };
