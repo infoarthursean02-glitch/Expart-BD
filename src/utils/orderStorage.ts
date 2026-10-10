@@ -30,8 +30,8 @@ const DEFAULT_SETTINGS: AdminSettings = {
   paymentNumber: '+8801929027577',
   packagePrice: 2999,
   businessName: 'Expart BD',
-  adminUsername: 'eXPART bd',
-  adminPassword: 'Ex02@0##',
+  adminUsername: 'expartbd',
+  adminPassword: 'ExpartBD@2026',
   adminPin: '1234',
   announcementActive: false,
   announcementText: '🔥 বিশেষ অফার: সম্পূর্ণ ফেসবুক মনিটাইজেশন প্যাকেজ এখন মাত্র ৳২,৯৯৯ টাকায়!',
@@ -263,6 +263,7 @@ export const getSettings = (): AdminSettings => {
       return DEFAULT_SETTINGS;
     }
     const parsed = JSON.parse(data);
+    let changed = false;
     if (
       !parsed.paymentNumber || 
       parsed.paymentNumber === '01601300122' || 
@@ -271,6 +272,14 @@ export const getSettings = (): AdminSettings => {
       parsed.paymentNumber.includes('01601300122')
     ) {
       parsed.paymentNumber = '+8801929027577';
+      changed = true;
+    }
+    if (!parsed.adminUsername || parsed.adminUsername === 'eXPART bd') {
+      parsed.adminUsername = 'expartbd';
+      parsed.adminPassword = 'ExpartBD@2026';
+      changed = true;
+    }
+    if (changed) {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...DEFAULT_SETTINGS, ...parsed }));
     }
     return { ...DEFAULT_SETTINGS, ...parsed };

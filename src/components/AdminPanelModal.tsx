@@ -57,7 +57,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({ isOpen, onClos
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (pin === '1234' || pin === 'admin') {
+    const trimmedPin = pin.trim().toLowerCase();
+    if (trimmedPin === '1234' || trimmedPin === 'admin' || trimmedPin === 'expartbd' || pin === 'ExpartBD@2026') {
       setIsAuthenticated(true);
       setPinError(false);
       setPin('');

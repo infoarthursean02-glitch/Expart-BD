@@ -30,9 +30,20 @@ const isCurrentRouteAdmin = (): boolean => {
   const path = window.location.pathname.toLowerCase();
   const hash = window.location.hash.toLowerCase();
   return (
+    path === '/expartbd-admin' ||
+    path === '/expartbd-admin/' ||
+    path.startsWith('/expartbd-admin/') ||
+    path === '/expartbd/admin' ||
+    path.startsWith('/expartbd/admin/') ||
+    path === '/expart-admin' ||
+    path.startsWith('/expart-admin/') ||
+    path === '/expartbd' ||
+    path === '/expartbd/' ||
     path === '/admin' || 
     path === '/admin/' || 
     path.startsWith('/admin/') || 
+    hash === '#expartbd-admin' ||
+    hash === '#/expartbd-admin' ||
     hash === '#admin' || 
     hash === '#/admin'
   );
@@ -62,7 +73,7 @@ export default function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
         e.preventDefault();
-        window.history.pushState(null, '', '/admin');
+        window.history.pushState(null, '', '/expartbd-admin');
         setCurrentView('admin');
       }
     };

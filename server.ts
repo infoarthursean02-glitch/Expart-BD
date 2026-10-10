@@ -105,8 +105,8 @@ const DEFAULT_SETTINGS = {
   paymentNumber: '+8801929027577',
   packagePrice: 2999,
   businessName: 'Expart BD',
-  adminUsername: 'eXPART bd',
-  adminPassword: 'Ex02@0##',
+  adminUsername: 'expartbd',
+  adminPassword: 'ExpartBD@2026',
   adminPin: '1234',
   announcementActive: false,
   announcementText: '🔥 বিশেষ অফার: সম্পূর্ণ ফেসবুক মনিটাইজেশন প্যাকেজ এখন মাত্র ৳২,৯৯৯ টাকায়!',
@@ -119,8 +119,17 @@ if (!fs.existsSync(SETTINGS_FILE)) {
   writeJsonFile(SETTINGS_FILE, DEFAULT_SETTINGS);
 } else {
   const currentSettings: any = readJsonFile(SETTINGS_FILE, DEFAULT_SETTINGS);
+  let changed = false;
   if (!currentSettings.paymentNumber || currentSettings.paymentNumber.includes('01908769186') || currentSettings.paymentNumber.includes('01601300122')) {
     currentSettings.paymentNumber = '+8801929027577';
+    changed = true;
+  }
+  if (!currentSettings.adminUsername || currentSettings.adminUsername === 'eXPART bd') {
+    currentSettings.adminUsername = 'expartbd';
+    currentSettings.adminPassword = 'ExpartBD@2026';
+    changed = true;
+  }
+  if (changed) {
     writeJsonFile(SETTINGS_FILE, currentSettings);
   }
 }

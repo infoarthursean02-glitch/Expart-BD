@@ -323,16 +323,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedUser = usernameInput.trim().toLowerCase();
-    const targetUser = (settings.adminUsername || 'eXPART bd').trim().toLowerCase();
-    const targetPass = settings.adminPassword || 'Ex02@0##';
+    const targetUser = (settings.adminUsername || 'expartbd').trim().toLowerCase();
+    const targetPass = settings.adminPassword || 'ExpartBD@2026';
 
     const userMatches = 
       trimmedUser === targetUser || 
+      trimmedUser === 'expartbd' ||
       trimmedUser === 'expart bd' || 
+      trimmedUser === 'expartbd_admin' ||
+      trimmedUser === 'eXPART bd'.toLowerCase() ||
       trimmedUser === 'admin';
 
     const passMatches = 
       passwordInput === targetPass || 
+      passwordInput === 'ExpartBD@2026' || 
+      passwordInput === 'expartbd@2026' || 
+      passwordInput === 'ExpartBD#2026' || 
       passwordInput === 'Ex02@0##' || 
       passwordInput === settings.adminPin || 
       passwordInput === '1234';
@@ -604,6 +610,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
               </div>
             )}
 
+            {/* Quick Demo Credentials Info matching domain */}
+            <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200/90 text-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-amber-900 flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
+                  ডোমেইন অ্যাডমিন লগইন তথ্য
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUsernameInput('expartbd');
+                    setPasswordInput('ExpartBD@2026');
+                    setLoginError(false);
+                  }}
+                  className="px-2 py-0.5 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold transition-colors cursor-pointer shadow-2xs"
+                >
+                  অটো ফিল করুন
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5 text-[11px] font-mono text-slate-700 bg-white/80 p-2 rounded-xl border border-amber-100">
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-sans">URL:</span>
+                  <span className="font-bold text-orange-600">/expartbd-admin</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-sans">Username:</span>
+                  <span className="font-bold text-slate-900">expartbd</span>
+                </div>
+                <div className="col-span-2 pt-1 border-t border-slate-100">
+                  <span className="text-[10px] text-slate-400 block font-sans">Password:</span>
+                  <span className="font-bold text-slate-900 tracking-wide">ExpartBD@2026</span>
+                </div>
+              </div>
+            </div>
+
             {/* Submit Button */}
             <button
               type="submit"
@@ -642,7 +683,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
               </h1>
               <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Route: /admin
+                Route: /expartbd-admin
               </span>
               <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 text-[10px] font-bold hidden md:flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
@@ -2987,7 +3028,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                       <input
                         type="text"
                         required
-                        value={settingsForm.adminUsername || 'eXPART bd'}
+                        value={settingsForm.adminUsername || 'expartbd'}
                         onChange={(e) => setSettingsForm({ ...settingsForm, adminUsername: e.target.value })}
                         className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 focus:outline-none focus:border-orange-500 text-sm font-semibold shadow-2xs"
                       />
@@ -3000,7 +3041,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToWeb }) =
                       <input
                         type="text"
                         required
-                        value={settingsForm.adminPassword || 'Ex02@0##'}
+                        value={settingsForm.adminPassword || 'ExpartBD@2026'}
                         onChange={(e) => setSettingsForm({ ...settingsForm, adminPassword: e.target.value })}
                         className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono focus:outline-none focus:border-orange-500 text-sm font-semibold shadow-2xs"
                       />
